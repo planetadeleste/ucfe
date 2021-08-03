@@ -1,0 +1,23 @@
+{
+    "name":"planetadeleste/ucfe",
+    "description":"PHP UCFE client",
+    "minimum-stability":"stable",
+    "license":"MIT",
+    "type":"libray",
+    "authors":[
+        {
+            "name":"Alvaro Canepa",
+            "email":"bfpdevel@gmail.com"
+        }
+    ],
+    "require":{
+        "php":"~7.3",
+        "ext-soap":"*",
+        "spatie/array-to-xml":"~2.15.0"
+    },
+    "autoload":{
+        "psr-4":{
+            "PlanetaDelEste\\Ucfe\\":"src/"
+        }
+    }
+}
