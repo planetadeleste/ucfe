@@ -13,7 +13,9 @@
     "require":{
         "php":"~7.3",
         "ext-soap":"*",
-        "spatie/array-to-xml":"~2.15.0"
+        "ext-json":"*",
+        "spatie/array-to-xml":"~2.15.0",
+        "illuminate/support": "~6.0"
     },
     "autoload":{
         "psr-4":{

@@ -2,6 +2,7 @@
 
 namespace PlanetaDelEste\Ucfe;
 
+use Illuminate\Support\Arr;
 use SoapClient;
 
 abstract class Client
@@ -17,67 +18,135 @@ abstract class Client
     /** @var \PlanetaDelEste\Ucfe\WsseAuthHeader */
     protected $auth;
 
-    protected $sUsername;
-    protected $sPassword;
-    protected $sCodComercio;
-    protected $sCodTerminal;
-
-    /**
-     * Set UCFE username
-     * @param string $sValue
-     *
-     * @return $this
-     */
-    public function setUser(string $sValue): self
+    public static function __callStatic(string $name, array $arArgs = [])
     {
-        $this->sUsername = $sValue;
-
-        return $this;
+        if (method_exists(get_called_class(), $name)) {
+            return call_user_func_array([new static(), $name], $arArgs);
+        }
     }
 
     /**
-     * Set UCFE password
-     * @param string $sValue
+     * @param array $arParams   = [
+     *                          'req' => [
+     *                          'Req' => [
+     *                          'CodComercio' => '',
+     *                          'CodTerminal' => '',
+     *                          'FechaReq' => '',
+     *                          'HoraReq' => '',
+     *                          'RutEmisor' => '',
+     *                          'TipoMensaje' => '',
+     *                          'CfeXmlOTexto' => '',
+     *                          'Adenda' => '',
+     *                          'Certificado' => '',
+     *                          'CifrarComplementoFiscal' => '',
+     *                          'CodRta' => '',
+     *                          'DatosQr' => '',
+     *                          'EmailEnvioPdfReceptor' => '',
+     *                          'EstadoSituacion' => '',
+     *                          'IdReq' => '',
+     *                          'Impresora' => '',
+     *                          'NumeroCfe' => '',
+     *                          'RechCom' => '',
+     *                          'Serie' => '',
+     *                          'TipoCfe' => '',
+     *                          'TipoMensaje' => '',
+     *                          'Uuid' => '',
+     *                          ],
+     *                          'RequestDate' => '',
+     *                          'Tout' => '3000',
+     *                          'ReqEnc' => '',
+     *                          'CodComercio' => '',
+     *                          'CodTerminal' => '',
+     *                          ]]
      *
-     * @return $this
+     * @return mixed
+     * @throws \Exception
      */
-    public function setPassword(string $sValue): self
+    public function exec(array $arParams = [])
     {
-        $this->sPassword = $sValue;
+        $this->validateAuth();
 
-        return $this;
+        $arReqData = [
+            'CodComercio' => Auth::getCodComercio(),
+            'CodTerminal' => Auth::getCodTerminal(),
+        ];
+
+        // Wrap primary key as req.Req
+        if (!Arr::has($arParams, 'req') && !Arr::has($arParams, 'Req')) {
+            $arParams = ['req' => ['Req' => $arParams]];
+        }
+
+        // Wrap primary key as req
+        if (!Arr::has($arParams, 'req')) {
+            $arParams = ['req' => $arParams];
+        }
+
+        // Merge CodComercio and CodTerminal
+        Arr::set($arParams, 'req', $arReqData + Arr::get($arParams, 'req', []));
+        Arr::set($arParams, 'req.Req', $arReqData + Arr::get($arParams, 'req.Req', []));
+
+        // Set default timeout to 3000
+        if (!Arr::has($arParams, 'req.Tout')) {
+            Arr::set($arParams, 'req.Tout', 3000);
+        }
+
+        // Set default request date to now on main req key
+        if (!Arr::has($arParams, 'req.RequestDate')) {
+            Arr::set($arParams, 'req.RequestDate', date('s'));
+        }
+
+        // Set default request time
+        if (!Arr::has($arParams, 'req.Req.HoraReq')) {
+            Arr::set($arParams, 'req.Req.HoraReq', date('His'));
+        }
+
+        // Set default request date on req.Req key
+        if (!Arr::has($arParams, 'req.Req.FechaReq')) {
+            Arr::set($arParams, 'req.Req.FechaReq', date('Ymd'));
+        }
+
+        // Set TipoMensaje
+        Arr::set($arParams, 'req.Req.TipoMensaje', $this->getTipoMensaje());
+
+        $obResponse = $this->soap()->Invoke($arParams);
+        $sResponseClass = $this->getResponseClass();
+
+        return new $sResponseClass($obResponse);
     }
 
     /**
-     * Set UCFE CodComercio value
-     * @param string $sValue
-     *
-     * @return $this
+     * @return bool
+     * @throws \Exception
      */
-    public function setCodComercio(string $sValue): self
+    protected function validateAuth(): bool
     {
-        $this->sCodComercio = $sValue;
+        if (!Auth::getUser()) {
+            throw new \Exception('Username is required');
+        }
 
-        return $this;
+        if (!Auth::getPassword()) {
+            throw new \Exception('Password is required');
+        }
+
+        if (!Auth::getCodTerminal()) {
+            throw new \Exception('The field CodTerminal is required');
+        }
+
+        if (!Auth::getCodComercio()) {
+            throw new \Exception('The field CodComercio is required');
+        }
+
+        if (!Auth::getUrl()) {
+            throw new \Exception('The field Url is required');
+        }
+
+        return true;
     }
 
     /**
-     * Set UCFE CodTerminal value
-     * @param string $sValue
-     *
-     * @return $this
+     * @return mixed
      */
-    public function setCodTerminal(string $sValue): self
-    {
-        $this->sCodTerminal = $sValue;
-
-        return $this;
-    }
-
-    /**
-     * @return string
-     */
-    abstract public function getResponseClass(): string;
+    abstract protected function getTipoMensaje();
 
     /**
      * @param array $arOptions
@@ -87,52 +156,19 @@ abstract class Client
      */
     protected function soap(array $arOptions = []): SoapClient
     {
-        $this->validateAuth();
-
         $arOptions = array_merge(['trace' => 1, "cache_wsdl" => WSDL_CACHE_NONE], $arOptions);
-        $sService = $this->getService();
         $sSoapClass = $this->getSoapClass();
-        $sUrl = 'https://'.$sService.'/';
+        $sUrl = sprintf('https://%s.ucfe.com.uy/', Auth::getUrl());
         if ($this->inbox) {
             $sUrl .= 'Inbox/';
         }
 
         $this->client = new $sSoapClass($sUrl.self::URL, $arOptions);
-        $authHeader = new WsseAuthHeader($this->sUsername, $this->sPassword);
+        $authHeader = new WsseAuthHeader(Auth::getUser(), Auth::getPassword());
         $this->client->__setSoapHeaders([$authHeader]);
 
         return $this->client;
     }
-
-    /**
-     * @return bool
-     * @throws \Exception
-     */
-    protected function validateAuth(): bool
-    {
-        if (!$this->sUsername) {
-            throw new \Exception('Username is required');
-        }
-
-        if (!$this->sPassword) {
-            throw new \Exception('Password is required');
-        }
-
-        if (!$this->sCodTerminal) {
-            throw new \Exception('The field CodTerminal is required');
-        }
-
-        if (!$this->sCodComercio) {
-            throw new \Exception('The field CodComercio is required');
-        }
-
-        return true;
-    }
-
-    /**
-     * @return string Name of service
-     */
-    abstract public function getService(): string;
 
     /**
      * @return string Use custom SoapClient class
@@ -141,4 +177,10 @@ abstract class Client
     {
         return SoapClient::class;
     }
+
+    /**
+     * @return string
+     */
+    abstract protected function getResponseClass(): string;
+
 }
