@@ -1,6 +1,9 @@
 # Cliente UCFE
 API PHP para consumir datos de servicios URUWARE (UCFE)
 
+[![](https://tokei.rs/b1/github/planetadeleste/ucfe)](https://github.com/XAMPPRocky/tokei_rs).
+
+
 ## Instalación
 
 ```bash
