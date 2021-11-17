@@ -29,24 +29,23 @@ abstract class Client
      * @param array $arParams   = [
      *                          'req' => [
      *                          'Req' => [
-     *                          'CodComercio' => '',
-     *                          'CodTerminal' => '',
-     *                          'FechaReq' => '',
-     *                          'HoraReq' => '',
-     *                          'RutEmisor' => '',
-     *                          'TipoMensaje' => '',
-     *                          'CfeXmlOTexto' => '',
      *                          'Adenda' => '',
      *                          'Certificado' => '',
+     *                          'CfeXmlOTexto' => '',
      *                          'CifrarComplementoFiscal' => '',
+     *                          'CodComercio' => '',
      *                          'CodRta' => '',
+     *                          'CodTerminal' => '',
      *                          'DatosQr' => '',
      *                          'EmailEnvioPdfReceptor' => '',
      *                          'EstadoSituacion' => '',
+     *                          'FechaReq' => '',
+     *                          'HoraReq' => '',
      *                          'IdReq' => '',
      *                          'Impresora' => '',
      *                          'NumeroCfe' => '',
      *                          'RechCom' => '',
+     *                          'RutEmisor' => '',
      *                          'Serie' => '',
      *                          'TipoCfe' => '',
      *                          'TipoMensaje' => '',
@@ -144,11 +143,6 @@ abstract class Client
     }
 
     /**
-     * @return mixed
-     */
-    abstract protected function getTipoMensaje();
-
-    /**
      * @param array $arOptions
      *
      * @return SoapClient
@@ -177,6 +171,31 @@ abstract class Client
     {
         return SoapClient::class;
     }
+
+    /**
+     * Get most recent XML Request sent to SOAP server
+     *
+     * @return string
+     */
+    public function getLastRequestXml(): string
+    {
+        return $this->client->__getLastRequest();
+    }
+
+    /**
+     * Get most recent XML Response returned from SOAP server
+     *
+     * @return string
+     */
+    public function getLastResponseXml(): string
+    {
+        return $this->client->__getLastResponse();
+    }
+
+    /**
+     * @return mixed
+     */
+    abstract protected function getTipoMensaje();
 
     /**
      * @return string
