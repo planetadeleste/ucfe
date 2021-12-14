@@ -22,4 +22,13 @@ class ETck extends CfeClient
     {
         return 101;
     }
+
+    public function getRules(): array
+    {
+        return [
+            'Encabezado.IdDoc'   => 'required',
+            'Encabezado.Emisor'  => 'required',
+            'Encabezado.Totales' => 'required',
+        ];
+    }
 }

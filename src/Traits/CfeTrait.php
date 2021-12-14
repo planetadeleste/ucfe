@@ -43,6 +43,11 @@ trait CfeTrait
         'Encabezado.Totales'  => 'required',
     ];
 
+    public function getRules(): array
+    {
+        return $this->rules;
+    }
+
     /**
      * @param bool $bForce
      *
@@ -93,7 +98,7 @@ trait CfeTrait
             }
         }
 
-        $obValidator = \Validator::make($this->arData, $this->rules);
+        $obValidator = \Validator::make($this->arData, $this->getRules());
         if (!$obValidator->passes()) {
             throw new \ValidationException($obValidator);
         }
@@ -142,6 +147,15 @@ trait CfeTrait
         }
     }
 
+    public function removeItem($sVal = 'Redondeo', $sKey = 'NomItem')
+    {
+        foreach ($this->arDetalle['Item'] as $iKey => $arItem) {
+            if (isset($arItem[$sKey]) && $arItem[$sKey] == $sVal) {
+                unset($this->arDetalle['Item'][$iKey]);
+            }
+        }
+    }
+
     /**
      * @param \PlanetaDelEste\Ucfe\Cfe\Detalle\Item $obItem
      *
@@ -154,15 +168,6 @@ trait CfeTrait
         $this->arDetalle['Item'][] = $arItem;
 
         return $this;
-    }
-
-    public function removeItem($sVal = 'Redondeo', $sKey = 'NomItem')
-    {
-        foreach ($this->arDetalle['Item'] as $iKey => $arItem) {
-            if (isset($arItem[$sKey]) && $arItem[$sKey] == $sVal) {
-                unset($this->arDetalle['Item'][$iKey]);
-            }
-        }
     }
 
     /**
@@ -212,9 +217,37 @@ trait CfeTrait
         return $this->arEncabezado['Emisor'] = new Emisor();
     }
 
+    /**
+     * Set Emisor object
+     *
+     * @param \PlanetaDelEste\Ucfe\Cfe\Encabezado\Emisor $obEmisor
+     *
+     * @return $this
+     */
+    public function setEmisor(Emisor $obEmisor): self
+    {
+        $this->arEncabezado['Emisor'] = $obEmisor;
+
+        return $this;
+    }
+
     public function receptor(): Receptor
     {
         return $this->arEncabezado['Receptor'] = new Receptor();
+    }
+
+    /**
+     * Set Receptor object
+     *
+     * @param \PlanetaDelEste\Ucfe\Cfe\Encabezado\Receptor $obReceptor
+     *
+     * @return $this
+     */
+    public function setReceptor(Receptor $obReceptor): self
+    {
+        $this->arEncabezado['Receptor'] = $obReceptor;
+
+        return $this;
     }
 
     public function totales(): Totales
