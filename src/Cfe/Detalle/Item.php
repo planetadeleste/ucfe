@@ -51,6 +51,8 @@ class Item
         if ($this->PrecioUnitario) {
             $this->MontoItem = $this->PrecioUnitario * $sValue;
         }
+
+        $this->arAttributes['Cantidad'] = $sValue;
     }
 
     public function setPrecioUnitarioAttribute($sValue)

@@ -23,10 +23,10 @@ trait HasAttributeTrait
 
     public function __set(string $sName, $sValue)
     {
+        $this->arAttributes[$sName] = $sValue;
+
         if ($this->hasMutator($sName)) {
             $this->{$this->getMutatorMethod($sName)}($sValue);
-        } else {
-            $this->arAttributes[$sName] = $sValue;
         }
     }
 

@@ -15,6 +15,12 @@ use PlanetaDelEste\Ucfe\Cfe\MediosPago;
 use PlanetaDelEste\Ucfe\Cfe\Referencia;
 use PlanetaDelEste\Ucfe\Cfe\SubTotInfo;
 
+/**
+ * @method self addMntIVAOtra(float $fValue)
+ * @method self addMntIVATasaBasica(float $fValue)
+ * @method self addMntIVATasaMin(float $fValue)
+ * @method self addMntIVAenSusp(float $fValue)
+ */
 trait CfeTrait
 {
     /** @var array Final XML data */
@@ -35,6 +41,17 @@ trait CfeTrait
 
     /** @var array */
     protected $arExtraData = [];
+
+    /** @var float[] Set totals */
+    protected $arTotals = [
+        'MntIVAOtra'           => 0,
+        'MntIVATasaBasica'     => 0,
+        'MntIVATasaMin'        => 0,
+        'MntIVAenSusp'         => 0,
+        'MntNetoIVAOtra'       => 0,
+        'MntNetoIVATasaBasica' => 0,
+        'MntNetoIvaTasaMin'    => 0,
+    ];
 
     protected $rules = [
         'Encabezado.IdDoc'    => 'required',
@@ -104,26 +121,48 @@ trait CfeTrait
         }
     }
 
+    /**
+     * @return Totales|null
+     */
+    public function getTotals():? Totales
+    {
+        return $this->arEncabezado['Totales'];
+    }
+
     public function setTotals()
     {
         /** @var Totales $obTotales */
-        $obTotales = $this->arEncabezado['Totales'];
-        if (!$obTotales) {
+        if (!$obTotales = $this->getTotals()) {
             return;
         }
 
         $this->removeItem();
         $fMontoItems = Collection::make($this->arDetalle['Item'])->sum('MontoItem');
 
-        if ($fTax = $obTotales->IVATasaBasica) {
-            $obTotales->MntNetoIVATasaBasica = $fMontoItems;
+        // Tasa Minima
+        $fTotal = 0;
 
-            // Calculate tax
-            $fPriceTax = $fMontoItems * ($fTax / 100);
-            $obTotales->MntIVATasaBasica = round($fPriceTax, 2);
+        if ($this->arTotals['MntIVATasaMin']) {
+            $obTotales->MntIVATasaMin = $this->arTotals['MntIVATasaMin'];
+            $obTotales->MntNetoIvaTasaMin = $this->arTotals['MntNetoIvaTasaMin'];
+            $fTotal += $obTotales->MntNetoIvaTasaMin + $obTotales->MntIVATasaMin;
+        }
 
+        if ($this->arTotals['MntIVATasaBasica']) {
+            $obTotales->MntIVATasaBasica = $this->arTotals['MntIVATasaBasica'];
+            $obTotales->MntNetoIVATasaBasica = $this->arTotals['MntNetoIVATasaBasica'];
+            $fTotal += $obTotales->MntNetoIVATasaBasica + $obTotales->MntIVATasaBasica;
+        }
+
+        if ($this->arTotals['MntIVAOtra']) {
+            $obTotales->MntIVAOtra = $this->arTotals['MntIVAOtra'];
+            $obTotales->MntNetoIVAOtra = $this->arTotals['MntNetoIVAOtra'];
+            $fTotal += $obTotales->MntNetoIVAOtra + $obTotales->MntIVAOtra;
+        }
+
+        if ($fTotal) {
             // Add total amount
-            $obTotales->MntTotal = round($fMontoItems + $fPriceTax, 2);
+            $obTotales->MntTotal = round($fTotal, 2);
 
             // Calculate rounded price
             $fPriceRounded = round($obTotales->MntTotal);
@@ -166,6 +205,47 @@ trait CfeTrait
         $obItem->NroLinDet = count($this->arDetalle['Item']) + 1;
         $arItem = $obItem->toArray();
         $this->arDetalle['Item'][] = $arItem;
+
+        return $this;
+    }
+
+    /**
+     * @param string $sName
+     * @param array  $arguments
+     *
+     * @return self
+     * @throws \Exception
+     */
+    public function __call(string $sName, array $arguments)
+    {
+        if (substr($sName, 0, 3) == 'add' && !empty($arguments)) {
+            $sMntKey = substr($sName, 3);
+            if (array_keys($this->arTotals, $sMntKey)) {
+                return $this->addAmount($arguments[0], $sMntKey);
+            }
+        }
+
+        throw new \Exception('Method '.$sName.' does not exits');
+    }
+
+    public function addAmount(float $sValue, string $sMntKey = 'MntIVATasaBasica'): self
+    {
+        $obTotals = $this->getTotals();
+        $sMntNetoKey = 'MntNeto'.substr($sMntKey, 3);
+
+        if ($sMntKey == 'MntIVATasaBasica') {
+            $fTax = $obTotals->IVATasaBasica;
+        } elseif ($sMntKey == 'MntIVATasaMin') {
+            $fTax = $obTotals->IVATasaMin;
+            $sMntNetoKey = 'MntNetoIvaTasaMin';
+        }
+
+        if (isset($fTax) && array_key_exists($sMntNetoKey, $this->arTotals)) {
+            $this->arTotals[$sMntNetoKey] += $sValue;
+            $sValue = $sValue * ($fTax / 100);
+        }
+
+        $this->arTotals[$sMntKey] += $sValue;
 
         return $this;
     }
