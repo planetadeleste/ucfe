@@ -7,8 +7,6 @@ use SoapClient;
 
 abstract class Client
 {
-    const URL = 'CfeService.svc?wsdl';
-
     /** @var SoapClient */
     protected $client;
 
@@ -156,8 +154,9 @@ abstract class Client
         if ($this->inbox) {
             $sUrl .= 'Inbox/';
         }
+        $sUrl .= $this->getWsdlUrl();
 
-        $this->client = new $sSoapClass($sUrl.self::URL, $arOptions);
+        $this->client = new $sSoapClass($sUrl, $arOptions);
         $authHeader = new WsseAuthHeader(Auth::getUser(), Auth::getPassword());
         $this->client->__setSoapHeaders([$authHeader]);
 
@@ -190,6 +189,14 @@ abstract class Client
     public function getLastResponseXml(): string
     {
         return $this->client->__getLastResponse();
+    }
+
+    /**
+     * @return string
+     */
+    protected function getWsdlUrl(): string
+    {
+        return 'CfeService.svc?wsdl';
     }
 
     /**

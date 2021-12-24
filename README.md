@@ -1,8 +1,8 @@
 # Cliente UCFE
+
 API PHP para consumir datos de servicios URUWARE (UCFE)
 
 [![](https://tokei.rs/b1/github/planetadeleste/ucfe)](https://github.com/XAMPPRocky/tokei_rs).
-
 
 ## Instalación
 
@@ -11,9 +11,11 @@ composer require planetadeleste/ucfe
 ```
 
 ## Uso
+
 Ante todo, es necesario contratar el servicio de [URUWARE](http://www.uruware.com/).
 
 ### Configurar credenciales
+
 ```php
 \PlanetaDelEste\Ucfe\Auth::credentials(
     $ucfeUsername,
@@ -23,14 +25,18 @@ Ante todo, es necesario contratar el servicio de [URUWARE](http://www.uruware.co
     $ucfeUrl
 );
 ```
->`$ucfeUrl` es parte de la url proporcianada por el departamento de operaciones de Uruware. Por ejemplo, para la url `testBiz.ucfe.com.uy`, en el campo `$ucfeUrl` solo debe pasar `testBiz`.
+
+> `$ucfeUrl` es parte de la url proporcianada por el departamento de operaciones de Uruware. Por ejemplo, para la url `testBiz.ucfe.com.uy`, en el campo `$ucfeUrl` solo debe pasar `testBiz`.
 
 ### Obtener datos de una empresa desde su RUT
+
 ```php
 $obResponse = (new \PlanetaDelEste\Ucfe\Service\ActEmpresarial())->get('219000090011');
 print_r($obResponse->getResult());
 ```
+
 #### Respuesta (array)
+
 ```json
 {
     "RUT": "219000090011",
@@ -107,4 +113,45 @@ print_r($obResponse->getResult());
 ```
 
 ### Facturación
+
+> Actualmente en desarrollo, no es recomendable su uso en entornos de producción.
+
+La librería permite la creación de eTck, eFact, eFact_Exp, eRem, eRem_Exp, eResg y eBoleta. 
+
+Los comprobantes  generan un XML, el que se envía al WS de URUWARE, quien se encarga de validarlo y enviarlo a DGI.
+
+Dicho XML consta de 3 partes principales; Encabezado, Detalle y CAEData, los que a su vez se ramifican en otras secciones. 
+
+#### Encabezado
+
+##### IdDoc
+
+`\PlanetaDelEste\Ucfe\Cfe\Encabezado\IdDoc`
+
+| Orden | Nombre      | Tipo     | Descripción                                                                      | Ejemplo |
+| -----:| ----------- | -------- | -------------------------------------------------------------------------------- | ------- |
+| 1     | TipoCFE     | `int`    | 101 \| 102 \| 103 \| 131 \| 132 \| 133 \| 201 \| 202 \| 203 \| 231 \| 232 \| 233 |         |
+| 2     | Serie       | `string` |                                                                                  |         |
+|       | ClauVenta   | `string` |                                                                                  |         |
+|       | CodPaisProp | `string` |                                                                                  |         |
+|       | DocProp     | `string` |                                                                                  |         |
+|       | DocPropExt  | `string` |                                                                                  |         |
+
+##### Emisor
+
+##### Receptor
+
+##### Totales
+
+#### eTck
+
+```php
+$obUcfe = new ETck();
+
+$obIdDoc = $obUcfe->idDoc();
+$obIdDoc->FmaPago = 1; // 1 Contado. 2 Crédito
+$obIdDoc->FchEmis = '2021-12-20'; // Fecha formato 'YYYY-MM-DD' (string|DateTime)
+
+```
+
 
