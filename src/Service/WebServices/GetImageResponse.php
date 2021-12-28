@@ -4,6 +4,9 @@ namespace PlanetaDelEste\Ucfe\Service\WebServices;
 
 use PlanetaDelEste\Ucfe\WebServicesFEResponse;
 
+/**
+ * @method string getResult()
+ */
 class GetImageResponse extends WebServicesFEResponse
 {
 
@@ -20,6 +23,6 @@ class GetImageResponse extends WebServicesFEResponse
      */
     protected function parseResult()
     {
-        return $this->obResponse;
+        return $this->obResponse->base64Binary;
     }
 }
