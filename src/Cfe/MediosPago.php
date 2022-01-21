@@ -5,7 +5,7 @@ namespace PlanetaDelEste\Ucfe\Cfe;
 use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
 
 /**
- * @property \PlanetaDelEste\Ucfe\Cfe\MediosPago\MedioPago $MedioPago
+ * @property \PlanetaDelEste\Ucfe\Cfe\MediosPago\MedioPago[] $MedioPago
  */
 class MediosPago
 {

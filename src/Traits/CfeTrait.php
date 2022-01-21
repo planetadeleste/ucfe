@@ -372,6 +372,23 @@ trait CfeTrait
     }
 
     /**
+     * @param \PlanetaDelEste\Ucfe\Cfe\MediosPago\MedioPago $obMedioPago
+     *
+     * @return $this
+     */
+    public function addMedioPago(MediosPago\MedioPago $obMedioPago): self
+    {
+        if (!isset($this->arExtraData['MediosPago'])) {
+            $this->arExtraData['MediosPago'] = ['MedioPago' => []];
+        }
+        $obMedioPago->NroLinMP = count($this->arExtraData['MediosPago']['MedioPago']) + 1;
+        $arMedioPago = $obMedioPago->toArray();
+        $this->arExtraData['MediosPago']['MedioPago'][] = $arMedioPago;
+
+        return $this;
+    }
+
+    /**
      * @param \PlanetaDelEste\Ucfe\Cfe\Referencia $obReferencia
      *
      * @return $this
