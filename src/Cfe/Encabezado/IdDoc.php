@@ -13,7 +13,7 @@ use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
  * @property string $FchEmis      Date format YYYY-MM-DD
  * @property string $FchValor
  * @property string $FchVenc      Date format YYYY-MM-DD
- * @property int    $FmaPago      Values: 1 | 2
+ * @property int    $FmaPago      Values: 1 (Contado) | 2 (Credito)
  * @property string $IVAalDia
  * @property string $IndCobPropia
  * @property string $IndCompraMEReventa

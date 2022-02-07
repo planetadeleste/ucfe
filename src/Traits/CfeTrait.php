@@ -124,7 +124,7 @@ trait CfeTrait
     /**
      * @return Totales|null
      */
-    public function getTotals():? Totales
+    public function getTotals(): ?Totales
     {
         return $this->arEncabezado['Totales'];
     }
@@ -175,10 +175,13 @@ trait CfeTrait
             // Add Item with round value
             if ($fPriceRound) {
                 $obItem = new Item();
-                $obItem->IndFact = 6;
+                // Indicador de Facturación (Item_Det_Fact)
+                // 6: Producto o servicio	no facturable
+                // 7: Producto o servicio no facturable negativo
+                $obItem->IndFact = $fPriceRound > 0 ? 6 : 7;
                 $obItem->NomItem = 'Redondeo';
                 $obItem->Cantidad = 1;
-                $obItem->PrecioUnitario = $fPriceRound;
+                $obItem->PrecioUnitario = abs($fPriceRound);
                 $this->addItem($obItem);
             }
 
@@ -355,6 +358,24 @@ trait CfeTrait
     public function addDscRcgGlobal(DscRcgGlobal $obDscRcgGlobal): self
     {
         $this->arExtraData['DscRcgGlobal'] = $obDscRcgGlobal->toArray();
+
+        return $this;
+    }
+
+    /**
+     * Add new discount
+     * @param \PlanetaDelEste\Ucfe\Cfe\DscRcgGlobal\DRG_Item $obItem
+     *
+     * @return $this
+     */
+    public function addGlobalDiscount(DscRcgGlobal\DRG_Item $obItem): self
+    {
+        if (!isset($this->arExtraData['DscRcgGlobal'])) {
+            $this->arExtraData['DscRcgGlobal'] = ['DRG_Item' => []];
+        }
+
+        $obItem->NroLinDR = count($this->arExtraData['DscRcgGlobal']['DRG_Item']) +1;
+        $this->arExtraData['DscRcgGlobal']['DRG_Item'][] = $obItem->toArray();
 
         return $this;
     }
