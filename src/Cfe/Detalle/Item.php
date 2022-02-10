@@ -61,8 +61,18 @@ class Item
             $sValue = 1;
         }
 
-        if ($this->PrecioUnitario) {
-            $this->MontoItem = $this->PrecioUnitario * $sValue;
+        if ($fUnitValue = $this->PrecioUnitario) {
+            $fTotal = $fUnitValue * $sValue;
+
+            if ($this->DescuentoMonto) {
+                $fTotal -= $this->DescuentoMonto;
+            }
+
+            if ($this->RecargoMnt) {
+                $fTotal += $this->RecargoMnt;
+            }
+
+            $this->MontoItem = $fTotal;
         }
 
         $this->arAttributes['Cantidad'] = $sValue;
@@ -75,6 +85,74 @@ class Item
         }
 
         $this->arAttributes['PrecioUnitario'] = $sValue;
+    }
+
+    /**
+     * Agrega un elemento SubDescuento
+     *
+     * @param \PlanetaDelEste\Ucfe\Cfe\Detalle\Item\SubDescuento $obDiscount
+     *
+     * @return void
+     */
+    public function addSubDescuento(SubDescuento $obDiscount)
+    {
+        if (!$this->hasAttribute('SubDescuento')) {
+            $this->arAttributes['SubDescuento'] = [];
+        }
+
+        $this->arAttributes['SubDescuento'][] = $obDiscount->toArray();
+    }
+
+    /**
+     * Agrega multiple elementos SubDescuento
+     *
+     * @param SubDescuento[] $arDiscounts
+     *
+     * @return void
+     */
+    public function addSubDescuentos(array $arDiscounts)
+    {
+        if (empty($arDiscounts)) {
+            return;
+        }
+
+        foreach ($arDiscounts as $obDiscount) {
+            $this->addSubDescuento($obDiscount);
+        }
+    }
+
+    /**
+     * Agrega un elemento SubRecargo
+     *
+     * @param \PlanetaDelEste\Ucfe\Cfe\Detalle\Item\SubRecargo $obCharge
+     *
+     * @return void
+     */
+    public function addSubRecargo(SubRecargo $obCharge)
+    {
+        if (!$this->hasAttribute('SubRecargo')) {
+            $this->arAttributes['SubRecargo'] = [];
+        }
+
+        $this->arAttributes['SubRecargo'][] = $obCharge->toArray();
+    }
+
+    /**
+     * Agrega multiples elementos SubRecargo
+     *
+     * @param SubRecargo[] $arCharges
+     *
+     * @return void
+     */
+    public function addSubRecargos(array $arCharges)
+    {
+        if (empty($arCharges)) {
+            return;
+        }
+
+        foreach ($arCharges as $obCharge) {
+            $this->addSubRecargo($obCharge);
+        }
     }
 
     /**
