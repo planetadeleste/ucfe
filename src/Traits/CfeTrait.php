@@ -121,14 +121,6 @@ trait CfeTrait
         }
     }
 
-    /**
-     * @return Totales|null
-     */
-    public function getTotals(): ?Totales
-    {
-        return $this->arEncabezado['Totales'];
-    }
-
     public function setTotals()
     {
         /** @var Totales $obTotales */
@@ -137,7 +129,7 @@ trait CfeTrait
         }
 
         $this->removeItem();
-        $fMontoItems = Collection::make($this->arDetalle['Item'])->sum('MontoItem');
+//        $fMontoItems = Collection::make($this->arDetalle['Item'])->sum('MontoItem');
 
         // Tasa Minima
         $fTotal = 0;
@@ -189,6 +181,14 @@ trait CfeTrait
         }
     }
 
+    /**
+     * @return Totales|null
+     */
+    public function getTotals(): ?Totales
+    {
+        return $this->arEncabezado['Totales'];
+    }
+
     public function removeItem($sVal = 'Redondeo', $sKey = 'NomItem')
     {
         foreach ($this->arDetalle['Item'] as $iKey => $arItem) {
@@ -213,6 +213,14 @@ trait CfeTrait
     }
 
     /**
+     * @return array
+     */
+    public function getItems(): array
+    {
+        return $this->arDetalle['Item'];
+    }
+
+    /**
      * @param string $sName
      * @param array  $arguments
      *
@@ -231,7 +239,7 @@ trait CfeTrait
         throw new \Exception('Method '.$sName.' does not exits');
     }
 
-    public function addAmount(float $sValue, string $sMntKey = 'MntIVATasaBasica'): self
+    public function addAmount(float $fValue, string $sMntKey = 'MntIVATasaBasica', bool $decrease = false): self
     {
         $obTotals = $this->getTotals();
         $sMntNetoKey = 'MntNeto'.substr($sMntKey, 3);
@@ -244,11 +252,21 @@ trait CfeTrait
         }
 
         if (isset($fTax) && array_key_exists($sMntNetoKey, $this->arTotals)) {
-            $this->arTotals[$sMntNetoKey] += $sValue;
-            $sValue = $sValue * ($fTax / 100);
+            $fMntValue = round($fValue, 2);
+
+            if ($decrease) {
+                $this->arTotals[$sMntNetoKey] -= $fMntValue;
+            } else {
+                $this->arTotals[$sMntNetoKey] += $fMntValue;
+            }
+            $fValue = round($fValue * ($fTax / 100), 2);
         }
 
-        $this->arTotals[$sMntKey] += $sValue;
+        if ($decrease) {
+            $this->arTotals[$sMntKey] -= $fValue;
+        } else {
+            $this->arTotals[$sMntKey] += $fValue;
+        }
 
         return $this;
     }
@@ -364,6 +382,7 @@ trait CfeTrait
 
     /**
      * Add new discount
+     *
      * @param \PlanetaDelEste\Ucfe\Cfe\DscRcgGlobal\DRG_Item $obItem
      *
      * @return $this
@@ -374,7 +393,16 @@ trait CfeTrait
             $this->arExtraData['DscRcgGlobal'] = ['DRG_Item' => []];
         }
 
-        $obItem->NroLinDR = count($this->arExtraData['DscRcgGlobal']['DRG_Item']) +1;
+        $sMntKey = 'MntIVAOtra';
+        if ($obItem->IndFactDR == '3') {
+            $sMntKey = 'MntIVATasaBasica';
+        } elseif ($obItem->IndFactDR == '2') {
+            $sMntKey = 'MntIVATasaMin';
+        }
+
+        $this->addAmount($obItem->ValorDR, $sMntKey, $obItem->TpoMovDR === 'D');
+
+        $obItem->NroLinDR = count($this->arExtraData['DscRcgGlobal']['DRG_Item']) + 1;
         $this->arExtraData['DscRcgGlobal']['DRG_Item'][] = $obItem->toArray();
 
         return $this;
