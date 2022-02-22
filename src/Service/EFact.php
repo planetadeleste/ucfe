@@ -23,6 +23,14 @@ class EFact extends CfeClient
      */
     public function getTipoCFE(): int
     {
+        if ($this->noteType === self::CFE_CREDIT_NOTE) {
+            return 112;
+        }
+
+        if ($this->noteType === self::CFE_DEBIT_NOTE) {
+            return 113;
+        }
+
         return 111;
     }
 }

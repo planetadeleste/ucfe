@@ -20,6 +20,14 @@ class ETck extends CfeClient
 
     public function getTipoCFE(): int
     {
+        if ($this->noteType === self::CFE_CREDIT_NOTE) {
+            return 102;
+        }
+
+        if ($this->noteType === self::CFE_DEBIT_NOTE) {
+            return 103;
+        }
+
         return 101;
     }
 

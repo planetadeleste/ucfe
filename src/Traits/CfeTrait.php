@@ -14,6 +14,7 @@ use PlanetaDelEste\Ucfe\Cfe\Encabezado\Totales;
 use PlanetaDelEste\Ucfe\Cfe\MediosPago;
 use PlanetaDelEste\Ucfe\Cfe\Referencia;
 use PlanetaDelEste\Ucfe\Cfe\SubTotInfo;
+use PlanetaDelEste\Ucfe\Service\CfeClient;
 
 /**
  * @method self addMntIVAOtra(float $fValue)
@@ -59,6 +60,9 @@ trait CfeTrait
         'Encabezado.Receptor' => 'required',
         'Encabezado.Totales'  => 'required',
     ];
+
+    /** @var string Nota de Crédito|Débito [nc|nb] */
+    protected $noteType = null;
 
     public function getRules(): array
     {
@@ -469,6 +473,26 @@ trait CfeTrait
     public function addComplFiscal(Compl_Fiscal $obComplFiscal): self
     {
         $this->arExtraData['Compl_Fiscal'] = $obComplFiscal->toArray();
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function setCreditNote(): self
+    {
+        $this->noteType = CfeClient::CFE_CREDIT_NOTE;
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function setDebitNote(): self
+    {
+        $this->noteType = CfeClient::CFE_DEBIT_NOTE;
 
         return $this;
     }

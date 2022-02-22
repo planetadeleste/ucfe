@@ -13,6 +13,9 @@ use Spatie\ArrayToXml\ArrayToXml;
  */
 class CfeClient extends Client
 {
+    const CFE_CREDIT_NOTE = 'nc';
+    const CFE_DEBIT_NOTE = 'nd';
+
     protected $iTipoMensaje = 820;
 
     /**
