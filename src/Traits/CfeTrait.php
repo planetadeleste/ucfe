@@ -442,13 +442,18 @@ trait CfeTrait
     }
 
     /**
-     * @param \PlanetaDelEste\Ucfe\Cfe\Referencia $obReferencia
+     * @param \PlanetaDelEste\Ucfe\Cfe\Referencia\Referencia $obReferencia
      *
      * @return $this
      */
-    public function addReferencia(Referencia $obReferencia): self
+    public function addReferencia(Referencia\Referencia $obReferencia): self
     {
-        $this->arExtraData['Referencia'] = $obReferencia;
+        if (!isset($this->arExtraData['Referencia'])) {
+            $this->arExtraData['Referencia'] = ['Referencia' => []];
+        }
+
+        $obReferencia->NroLinRef = count($this->arExtraData['Referencia']['Referencia']) + 1;
+        $this->arExtraData['Referencia']['Referencia'][] = $obReferencia->toArray();
 
         return $this;
     }
