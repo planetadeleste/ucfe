@@ -61,6 +61,17 @@ trait CfeTrait
         'Encabezado.Totales'  => 'required',
     ];
 
+    protected $arSortKeys = [
+        'Encabezado',
+        'Detalle',
+        'SubTotInfo',
+        'DscRcgGlobal',
+        'MediosPago',
+        'Referencia',
+        'CAEData',
+        'Compl_Fiscal',
+    ];
+
     /** @var string Nota de Crédito|Débito [nc|nb] */
     protected $noteType = null;
 
@@ -88,7 +99,7 @@ trait CfeTrait
      * @return void
      * @throws \ValidationException
      */
-    public function setData()
+    public function setData(): void
     {
         $this->arData = [];
         $this->setTotals();
@@ -119,13 +130,15 @@ trait CfeTrait
             }
         }
 
+        $this->sort();
+
         $obValidator = \Validator::make($this->arData, $this->getRules());
         if (!$obValidator->passes()) {
             throw new \ValidationException($obValidator);
         }
     }
 
-    public function setTotals()
+    public function setTotals(): void
     {
         /** @var Totales $obTotales */
         if (!$obTotales = $this->getTotals()) {
@@ -193,7 +206,7 @@ trait CfeTrait
         return $this->arEncabezado['Totales'];
     }
 
-    public function removeItem($sVal = 'Redondeo', $sKey = 'NomItem')
+    public function removeItem($sVal = 'Redondeo', $sKey = 'NomItem'): void
     {
         foreach ($this->arDetalle['Item'] as $iKey => $arItem) {
             if (isset($arItem[$sKey]) && $arItem[$sKey] == $sVal) {
@@ -500,5 +513,14 @@ trait CfeTrait
         $this->noteType = CfeClient::CFE_DEBIT_NOTE;
 
         return $this;
+    }
+
+    protected function sort(): void
+    {
+        $arData = $this->arData;
+        $arKeys = array_flip($this->arSortKeys);
+        $result = array_replace($arKeys, $arData);
+
+        $this->arData = array_intersect_key($result, $arData);
     }
 }
