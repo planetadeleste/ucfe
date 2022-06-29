@@ -78,7 +78,7 @@ class Item
         $this->arAttributes['Cantidad'] = $sValue;
     }
 
-    public function setPrecioUnitarioAttribute($sValue)
+    public function setPrecioUnitarioAttribute($sValue): void
     {
         if ($sValue > 0) {
             $this->MontoItem = $sValue * $this->Cantidad;
@@ -94,7 +94,7 @@ class Item
      *
      * @return void
      */
-    public function addSubDescuento(SubDescuento $obDiscount)
+    public function addSubDescuento(SubDescuento $obDiscount): void
     {
         if (!$this->hasAttribute('SubDescuento')) {
             $this->arAttributes['SubDescuento'] = [];
@@ -110,7 +110,7 @@ class Item
      *
      * @return void
      */
-    public function addSubDescuentos(array $arDiscounts)
+    public function addSubDescuentos(array $arDiscounts): void
     {
         if (empty($arDiscounts)) {
             return;
@@ -128,7 +128,7 @@ class Item
      *
      * @return void
      */
-    public function addSubRecargo(SubRecargo $obCharge)
+    public function addSubRecargo(SubRecargo $obCharge): void
     {
         if (!$this->hasAttribute('SubRecargo')) {
             $this->arAttributes['SubRecargo'] = [];
@@ -144,7 +144,7 @@ class Item
      *
      * @return void
      */
-    public function addSubRecargos(array $arCharges)
+    public function addSubRecargos(array $arCharges): void
     {
         if (empty($arCharges)) {
             return;
@@ -152,6 +152,36 @@ class Item
 
         foreach ($arCharges as $obCharge) {
             $this->addSubRecargo($obCharge);
+        }
+    }
+
+    /**
+     * @param RetencPercep $obData
+     *
+     * @return void
+     */
+    public function addRetencPercep(RetencPercep $obData): void
+    {
+        if (!$this->hasAttribute('RetencPercep')) {
+            $this->arAttributes['RetencPercep'] = [];
+        }
+
+        $this->arAttributes['RetencPercep'][] = $obData->toArray();
+    }
+
+    /**
+     * @param RetencPercep[] $arItems
+     *
+     * @return void
+     */
+    public function addRetencPerceps(array $arItems): void
+    {
+        if (empty($arItems)) {
+            return;
+        }
+
+        foreach ($arItems as $arItem) {
+            $this->addRetencPercep($arItem);
         }
     }
 

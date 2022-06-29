@@ -21,6 +21,7 @@ use PlanetaDelEste\Ucfe\Service\CfeClient;
  * @method self addMntIVATasaBasica(float $fValue)
  * @method self addMntIVATasaMin(float $fValue)
  * @method self addMntIVAenSusp(float $fValue)
+ * @method self addMntTotRetenido(float $fValue)
  */
 trait CfeTrait
 {
@@ -52,6 +53,7 @@ trait CfeTrait
         'MntNetoIVAOtra'       => 0,
         'MntNetoIVATasaBasica' => 0,
         'MntNetoIvaTasaMin'    => 0,
+        'MntTotRetenido'       => 0,
     ];
 
     protected $rules = [
@@ -151,6 +153,39 @@ trait CfeTrait
         // Tasa Minima
         $fTotal = 0;
 
+        // Resguardo
+        if ($this->getTipoCFE() === 182) {
+            if ($this->arTotals['MntTotRetenido']) {
+                $obTotales->MntTotRetenido = $this->arTotals['MntTotRetenido'];
+                $obTotales->CantLinDet = count($this->getItems());
+            }
+
+            $arRetenc = [];
+            foreach ($this->getItems() as $arItem) {
+                if (!isset($arItem['RetencPercep'])) {
+                    continue;
+                }
+
+                foreach ($arItem['RetencPercep'] as $arItemRetenc) {
+                    $sCode = $arItemRetenc['CodRet'];
+                    $sValue = $arItemRetenc['ValRetPerc'];
+
+                    if (!isset($arRetenc[$sCode])) {
+                        $arRetenc[$sCode] = new Totales\RetencPercep();
+                        $arRetenc[$sCode]->CodRet = $sCode;
+                        $arRetenc[$sCode]->ValRetPerc = $sValue;
+                    } else {
+                        $arRetenc[$sCode]->ValRetPerc += $sValue;
+                    }
+                }
+            }
+
+            $obTotales->RetencPercep = array_map(function (Totales\RetencPercep $obReten) {
+                return $obReten->toArray();
+            }, array_values($arRetenc));
+            return;
+        }
+
         if ($this->arTotals['MntIVATasaMin']) {
             $obTotales->MntIVATasaMin = $this->arTotals['MntIVATasaMin'];
             $obTotales->MntNetoIvaTasaMin = $this->arTotals['MntNetoIvaTasaMin'];
@@ -224,6 +259,18 @@ trait CfeTrait
     {
         $obItem->NroLinDet = count($this->arDetalle['Item']) + 1;
         $arItem = $obItem->toArray();
+
+        // Resguardo
+        if ($this->getTipoCFE() === 182) {
+            if (isset($arItem['Cantidad'])) {
+                unset($arItem['Cantidad']);
+            }
+
+            if (isset($arItem['UniMed'])) {
+                unset ($arItem['UniMed']);
+            }
+        }
+
         $this->arDetalle['Item'][] = $arItem;
 
         return $this;

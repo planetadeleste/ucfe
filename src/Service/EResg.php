@@ -22,4 +22,13 @@ class EResg extends CfeClient
     {
         return 182;
     }
+
+    public function getRules(): array
+    {
+        return [
+            'Encabezado.IdDoc'   => 'required',
+            'Encabezado.Emisor'  => 'required',
+            'Encabezado.Totales' => 'required',
+        ];
+    }
 }
