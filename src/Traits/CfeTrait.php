@@ -208,7 +208,11 @@ trait CfeTrait
         $obIdDoc = $this->arEncabezado['IdDoc'];
         if ($obIdDoc->IndCobPropia) {
             foreach ($this->getItems() as $arItem) {
-                $fTotal += $arItem['MontoItem'];
+                if (isset($arItem['IndFact']) && (int)$arItem['IndFact'] === 7) {
+                    $fTotal -= $arItem['MontoItem'];
+                } else {
+                    $fTotal += $arItem['MontoItem'];
+                }
             }
 
             $obTotales->MntTotal = 0;
