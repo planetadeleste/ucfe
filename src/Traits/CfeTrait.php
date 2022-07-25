@@ -204,33 +204,47 @@ trait CfeTrait
             $fTotal += $obTotales->MntNetoIVAOtra + $obTotales->MntIVAOtra;
         }
 
-        if ($fTotal) {
-            // Add total amount
-            $obTotales->MntTotal = round($fTotal, 2);
-
-            // Calculate rounded price
-            $fPriceRounded = round($obTotales->MntTotal);
-            $fPriceRound = round($fPriceRounded - $obTotales->MntTotal, 2);
-
-            // Add final price and rounded difference
-            $obTotales->MntPagar = $fPriceRounded;
-            $obTotales->MontoNF = $fPriceRound;
-
-            // Add Item with round value
-            if ($fPriceRound) {
-                $obItem = new Item();
-                // Indicador de Facturación (Item_Det_Fact)
-                // 6: Producto o servicio	no facturable
-                // 7: Producto o servicio no facturable negativo
-                $obItem->IndFact = $fPriceRound > 0 ? 6 : 7;
-                $obItem->NomItem = 'Redondeo';
-                $obItem->Cantidad = 1;
-                $obItem->PrecioUnitario = abs($fPriceRound);
-                $this->addItem($obItem);
+        /** @var IdDoc $obIdDoc */
+        $obIdDoc = $this->arEncabezado['IdDoc'];
+        if ($obIdDoc->IndCobPropia) {
+            foreach ($this->getItems() as $arItem) {
+                $fTotal += $arItem['MontoItem'];
             }
 
-            $obTotales->CantLinDet = count($this->arDetalle['Item']);
+            $obTotales->MntTotal = 0;
+            $obTotales->MntPagar = $fTotal;
+            $obTotales->MontoNF = $fTotal;
+        } else {
+            // Add total amount
+            $obTotales->MntTotal = $fTotal > 0 ? round($fTotal, 2) : 0;
+
+            // Check total amount to add rounded value
+            if ($fTotal > 0) {
+                // Calculate rounded price
+                $fPriceRounded = round($obTotales->MntTotal);
+                $fPriceRound = round($fPriceRounded - $obTotales->MntTotal, 2);
+
+                // Add final price and rounded difference
+                $obTotales->MntPagar = $fPriceRounded;
+                $obTotales->MontoNF = $fPriceRound;
+
+                // Add Item with round value
+                if ($fPriceRound) {
+                    $obItem = new Item();
+                    // Indicador de Facturación (Item_Det_Fact)
+                    // 6: Producto o servicio	no facturable
+                    // 7: Producto o servicio no facturable negativo
+                    $obItem->IndFact = $fPriceRound > 0 ? 6 : 7;
+                    $obItem->NomItem = 'Redondeo';
+                    $obItem->Cantidad = 1;
+                    $obItem->PrecioUnitario = abs($fPriceRound);
+                    $this->addItem($obItem);
+                }
+            }
         }
+
+
+        $obTotales->CantLinDet = count($this->arDetalle['Item']);
     }
 
     /**
