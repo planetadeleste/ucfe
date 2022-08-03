@@ -17,11 +17,11 @@ use PlanetaDelEste\Ucfe\Cfe\SubTotInfo;
 use PlanetaDelEste\Ucfe\Service\CfeClient;
 
 /**
- * @method self addMntIVAOtra(float $fValue)
- * @method self addMntIVATasaBasica(float $fValue)
- * @method self addMntIVATasaMin(float $fValue)
- * @method self addMntIVAenSusp(float $fValue)
- * @method self addMntTotRetenido(float $fValue)
+ * @method self addMntIVAOtra(float $fValue, bool $decrease = false, float $fTax = null)
+ * @method self addMntIVATasaBasica(float $fValue, bool $decrease = false, float $fTax = null)
+ * @method self addMntIVATasaMin(float $fValue, bool $decrease = false, float $fTax = null)
+ * @method self addMntIVAenSusp(float $fValue, bool $decrease = false, float $fTax = null)
+ * @method self addMntTotRetenido(float $fValue, bool $decrease = false, float $fTax = null)
  */
 trait CfeTrait
 {
@@ -54,6 +54,7 @@ trait CfeTrait
         'MntNetoIVATasaBasica' => 0,
         'MntNetoIvaTasaMin'    => 0,
         'MntTotRetenido'       => 0,
+        'MntNoGrv'             => 0,
     ];
 
     protected $rules = [
@@ -186,6 +187,20 @@ trait CfeTrait
             return;
         }
 
+        // Find items with IndFact = 1
+        foreach ($this->getItems() as $arItem) {
+            if (!isset($arItem['IndFact']) || $arItem['IndFact'] !== '1') {
+                continue;
+            }
+
+            if (!$obTotales->MntNoGrv) {
+                $obTotales->MntNoGrv = 0;
+            }
+
+            $fTotal += $arItem['MontoItem'];
+            $obTotales->MntNoGrv += $arItem['MontoItem'];
+        }
+
         if ($this->arTotals['MntIVATasaMin']) {
             $obTotales->MntIVATasaMin = $this->arTotals['MntIVATasaMin'];
             $obTotales->MntNetoIvaTasaMin = $this->arTotals['MntNetoIvaTasaMin'];
@@ -198,7 +213,7 @@ trait CfeTrait
             $fTotal += $obTotales->MntNetoIVATasaBasica + $obTotales->MntIVATasaBasica;
         }
 
-        if ($this->arTotals['MntIVAOtra']) {
+        if ($this->arTotals['MntNetoIVAOtra']) {
             $obTotales->MntIVAOtra = $this->arTotals['MntIVAOtra'];
             $obTotales->MntNetoIVAOtra = $this->arTotals['MntNetoIVAOtra'];
             $fTotal += $obTotales->MntNetoIVAOtra + $obTotales->MntIVAOtra;
@@ -314,22 +329,28 @@ trait CfeTrait
         if (substr($sName, 0, 3) == 'add' && !empty($arguments)) {
             $sMntKey = substr($sName, 3);
             if (array_keys($this->arTotals, $sMntKey)) {
-                return $this->addAmount($arguments[0], $sMntKey);
+                $decrease = isset($arguments[1]) && (bool)$arguments[1];
+                $fTax = isset($arguments[2]) ? (float)$arguments[2] : null;
+                return $this->addAmount($arguments[0], $sMntKey, $decrease, $fTax);
             }
         }
 
         throw new \Exception('Method '.$sName.' does not exits');
     }
 
-    public function addAmount(float $fValue, string $sMntKey = 'MntIVATasaBasica', bool $decrease = false): self
-    {
+    public function addAmount(
+        float  $fValue,
+        string $sMntKey = 'MntIVATasaBasica',
+        bool   $decrease = false,
+        float  $fTax = null
+    ): self {
         $obTotals = $this->getTotals();
         $sMntNetoKey = 'MntNeto'.substr($sMntKey, 3);
 
-        if ($sMntKey == 'MntIVATasaBasica') {
-            $fTax = $obTotals->IVATasaBasica;
-        } elseif ($sMntKey == 'MntIVATasaMin') {
-            $fTax = $obTotals->IVATasaMin;
+        if ($sMntKey === 'MntIVATasaBasica' && $obTotals) {
+            $fTax = (float)$obTotals->IVATasaBasica;
+        } elseif ($sMntKey === 'MntIVATasaMin' && $obTotals) {
+            $fTax = (float)$obTotals->IVATasaMin;
             $sMntNetoKey = 'MntNetoIvaTasaMin';
         }
 
