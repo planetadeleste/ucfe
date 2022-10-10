@@ -187,9 +187,9 @@ trait CfeTrait
             return;
         }
 
-        // Find items with IndFact = 1
+        // Find items with IndFact = 1|16
         foreach ($this->getItems() as $arItem) {
-            if (!isset($arItem['IndFact']) || $arItem['IndFact'] !== '1') {
+            if (!isset($arItem['IndFact']) || !in_array($arItem['IndFact'], ['1', '16'])) {
                 continue;
             }
 
