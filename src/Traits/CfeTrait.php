@@ -141,6 +141,85 @@ trait CfeTrait
         }
     }
 
+    public function calculateTotal()
+    {
+        $fTotal = 0;
+
+        /** @var Totales $obTotales */
+        if (!$obTotales = $this->getTotals()) {
+            return $fTotal;
+        }
+
+        foreach ($this->getItems() as $arItem) {
+            if (!isset($arItem['IndFact']) || !in_array((int)$arItem['IndFact'], [1, 16])) {
+                continue;
+            }
+
+            $fTotal += $arItem['MontoItem'];
+        }
+
+        if ($this->arTotals['MntIVATasaMin']) {
+            $fTotal += $this->arTotals['MntNetoIvaTasaMin'] + $this->arTotals['MntIVATasaMin'];
+        }
+
+        if ($this->arTotals['MntIVATasaBasica']) {
+            $fTotal += $this->arTotals['MntNetoIVATasaBasica'] + $this->arTotals['MntIVATasaBasica'];
+        }
+
+        if ($this->arTotals['MntNetoIVAOtra']) {
+            $fTotal += $this->arTotals['MntNetoIVAOtra'] + $this->arTotals['MntIVAOtra'];
+        }
+
+        /** @var IdDoc $obIdDoc */
+        if (($obIdDoc = $this->arEncabezado['IdDoc']) && $obIdDoc->IndCobPropia) {
+            foreach ($this->getItems() as $arItem) {
+                if (isset($arItem['IndFact']) && (int)$arItem['IndFact'] === 7) {
+                    $fTotal -= $arItem['MontoItem'];
+                } else {
+                    $fTotal += $arItem['MontoItem'];
+                }
+            }
+        }
+
+        return $fTotal;
+    }
+
+    /**
+     * @return void
+     */
+    public function setRoundedTotal(): void
+    {
+        /** @var Totales $obTotales */
+        if ((!$obTotales = $this->getTotals()) || !$obTotales->MntTotal) {
+            return;
+        }
+
+        // Calculate rounded price
+        $fPriceRounded = round($obTotales->MntTotal);
+
+        // Add final price and rounded difference
+        if (!$obTotales->hasAttribute('MntPagar')) {
+            $obTotales->MntPagar = $fPriceRounded;
+        }
+
+        if (!$obTotales->hasAttribute('MontoNF')) {
+            $obTotales->MontoNF = round($obTotales->MntPagar - $obTotales->MntTotal, 2);
+        }
+
+        // Add Item with round value
+        if ($obTotales->MontoNF) {
+            $obItem = new Item();
+            // Indicador de Facturación (Item_Det_Fact)
+            // 6: Producto o servicio	no facturable
+            // 7: Producto o servicio no facturable negativo
+            $obItem->IndFact = $obTotales->MontoNF > 0 ? 6 : 7;
+            $obItem->NomItem = 'Redondeo';
+            $obItem->Cantidad = 1;
+            $obItem->PrecioUnitario = abs($obTotales->MontoNF);
+            $this->addItem($obItem);
+        }
+    }
+
     public function setTotals(): void
     {
         /** @var Totales $obTotales */
@@ -148,11 +227,12 @@ trait CfeTrait
             return;
         }
 
-        $this->removeItem();
-//        $fMontoItems = Collection::make($this->arDetalle['Item'])->sum('MontoItem');
+        if (!$obTotales->hasAttribute('MontoNF')) {
+            $this->removeItem();
+        }
 
         // Tasa Minima
-        $fTotal = 0;
+        $fTotal = $this->calculateTotal();
 
         // Resguardo
         if ($this->getTipoCFE() === 182) {
@@ -197,68 +277,40 @@ trait CfeTrait
                 $obTotales->MntNoGrv = 0;
             }
 
-            $fTotal += $arItem['MontoItem'];
             $obTotales->MntNoGrv += $arItem['MontoItem'];
         }
 
         if ($this->arTotals['MntIVATasaMin']) {
             $obTotales->MntIVATasaMin = $this->arTotals['MntIVATasaMin'];
             $obTotales->MntNetoIvaTasaMin = $this->arTotals['MntNetoIvaTasaMin'];
-            $fTotal += $obTotales->MntNetoIvaTasaMin + $obTotales->MntIVATasaMin;
         }
 
         if ($this->arTotals['MntIVATasaBasica']) {
             $obTotales->MntIVATasaBasica = $this->arTotals['MntIVATasaBasica'];
             $obTotales->MntNetoIVATasaBasica = $this->arTotals['MntNetoIVATasaBasica'];
-            $fTotal += $obTotales->MntNetoIVATasaBasica + $obTotales->MntIVATasaBasica;
         }
 
         if ($this->arTotals['MntNetoIVAOtra']) {
             $obTotales->MntIVAOtra = $this->arTotals['MntIVAOtra'];
             $obTotales->MntNetoIVAOtra = $this->arTotals['MntNetoIVAOtra'];
-            $fTotal += $obTotales->MntNetoIVAOtra + $obTotales->MntIVAOtra;
         }
 
         /** @var IdDoc $obIdDoc */
         $obIdDoc = $this->arEncabezado['IdDoc'];
         if ($obIdDoc->IndCobPropia) {
-            foreach ($this->getItems() as $arItem) {
-                if (isset($arItem['IndFact']) && (int)$arItem['IndFact'] === 7) {
-                    $fTotal -= $arItem['MontoItem'];
-                } else {
-                    $fTotal += $arItem['MontoItem'];
-                }
-            }
-
             $obTotales->MntTotal = 0;
             $obTotales->MntPagar = $fTotal;
             $obTotales->MontoNF = $fTotal;
         } else {
             // Add total amount
-            $obTotales->MntTotal = $fTotal > 0 ? round($fTotal, 2) : 0;
+            if (!$obTotales->hasAttribute('MntTotal')) {
+                $obTotales->MntTotal = $fTotal > 0 ? round($fTotal, 2) : 0;
+            }
 
             // Check total amount to add rounded value
-            if ($fTotal > 0) {
+            if (!$obTotales->hasAttribute('MntPagar') && !$obTotales->hasAttribute('MontoNF')) {
                 // Calculate rounded price
-                $fPriceRounded = round($obTotales->MntTotal);
-                $fPriceRound = round($fPriceRounded - $obTotales->MntTotal, 2);
-
-                // Add final price and rounded difference
-                $obTotales->MntPagar = $fPriceRounded;
-                $obTotales->MontoNF = $fPriceRound;
-
-                // Add Item with round value
-                if ($fPriceRound) {
-                    $obItem = new Item();
-                    // Indicador de Facturación (Item_Det_Fact)
-                    // 6: Producto o servicio	no facturable
-                    // 7: Producto o servicio no facturable negativo
-                    $obItem->IndFact = $fPriceRound > 0 ? 6 : 7;
-                    $obItem->NomItem = 'Redondeo';
-                    $obItem->Cantidad = 1;
-                    $obItem->PrecioUnitario = abs($fPriceRound);
-                    $this->addItem($obItem);
-                }
+                $this->setRoundedTotal();
             }
         }
 
