@@ -18,6 +18,9 @@ class CfeClient extends Client
 
     protected $iTipoMensaje = 820;
 
+    /** @var string Customer email to be used on field EmailEnvioPdfReceptor */
+    protected $sCustomerEmail;
+
     /**
      * @return \PlanetaDelEste\Ucfe\Service\CfeResponse
      * @throws \Exception
@@ -50,6 +53,11 @@ class CfeClient extends Client
             'IdReq'        => 1,
             'Uuid'         => Uuid::uuid4()->toString()
         ];
+
+        if (!empty($this->sCustomerEmail)) {
+            $arData['EmailEnvioPdfReceptor'] = $this->sCustomerEmail;
+        }
+
         return $this->exec($arData);
     }
 
@@ -76,6 +84,26 @@ class CfeClient extends Client
     {
         $this->iTipoMensaje = 220;
         return $this->send();
+    }
+
+    /**
+     * @param string $sValue
+     *
+     * @return $this
+     */
+    public function setCustomerEmail(string $sValue): self
+    {
+        $this->sCustomerEmail = $sValue;
+
+        return $this;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getCustomerEmail(): ?string
+    {
+        return !empty($this->sCustomerEmail) ? $this->sCustomerEmail : null;
     }
 
     /**
