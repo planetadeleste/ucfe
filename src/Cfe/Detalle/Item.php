@@ -57,7 +57,7 @@ class Item
 
     public function setCantidadAttribute($sValue): void
     {
-        if (!$sValue || !is_numeric($sValue) || $sValue <= 0) {
+        if (!$sValue || !is_numeric($sValue)) {
             $sValue = 1;
         }
 
@@ -80,6 +80,9 @@ class Item
 
     public function setPrecioUnitarioAttribute($sValue): void
     {
+        // PrecioUnitario always be positive
+        $sValue = abs($sValue);
+
         if ($sValue > 0) {
             $this->MontoItem = $sValue * $this->Cantidad;
         }
