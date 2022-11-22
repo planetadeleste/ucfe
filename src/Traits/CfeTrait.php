@@ -150,6 +150,7 @@ trait CfeTrait
             return $fTotal;
         }
 
+        // Sum items value
         foreach ($this->getItems() as $arItem) {
             if (!isset($arItem['IndFact']) || !in_array((int)$arItem['IndFact'], [1, 16])) {
                 continue;
@@ -170,6 +171,23 @@ trait CfeTrait
             $fTotal += $this->arTotals['MntNetoIVAOtra'] + $this->arTotals['MntIVAOtra'];
         }
 
+        // Find and apply discounts
+        $arDiscounts = array_get($this->arExtraData, 'DscRcgGlobal.DRG_Item', []);
+        if (!empty($arDiscounts)) {
+            foreach ($arDiscounts as $arDiscountItem) {
+                if ((int)$arDiscountItem['IndFactDR'] !== 1) {
+                    continue;
+                }
+
+                $fValue = (float)$arDiscountItem['ValorDR'];
+                if ($arDiscountItem['TpoMovDR'] === 'D') {
+                    $fTotal -= $fValue;
+                } else {
+                    $fTotal += $fValue;
+                }
+            }
+        }
+
         /** @var IdDoc $obIdDoc */
         if (($obIdDoc = $this->arEncabezado['IdDoc']) && $obIdDoc->IndCobPropia) {
             foreach ($this->getItems() as $arItem) {
@@ -185,9 +203,11 @@ trait CfeTrait
     }
 
     /**
+     * @param bool $force
+     *
      * @return void
      */
-    public function setRoundedTotal(): void
+    public function setRoundedTotal(bool $force = false): void
     {
         /** @var Totales $obTotales */
         if ((!$obTotales = $this->getTotals()) || !$obTotales->MntTotal) {
@@ -202,7 +222,7 @@ trait CfeTrait
             $obTotales->MntPagar = $fPriceRounded;
         }
 
-        if (!$obTotales->hasAttribute('MontoNF')) {
+        if ($force === true || !$obTotales->hasAttribute('MontoNF')) {
             $obTotales->MontoNF = round($obTotales->MntPagar - $obTotales->MntTotal, 2);
         }
 
@@ -267,17 +287,33 @@ trait CfeTrait
             return;
         }
 
+        // Set initial value
+        $obTotales->MntNoGrv = 0;
+
         // Find items with IndFact = 1|16
         foreach ($this->getItems() as $arItem) {
-            if (!isset($arItem['IndFact']) || !in_array($arItem['IndFact'], ['1', '16'])) {
+            if (!isset($arItem['IndFact']) || !in_array((int)$arItem['IndFact'], [1, 16])) {
                 continue;
             }
 
-            if (!$obTotales->MntNoGrv) {
-                $obTotales->MntNoGrv = 0;
-            }
-
             $obTotales->MntNoGrv += $arItem['MontoItem'];
+        }
+
+        // Apply discounts over MntNoGrv
+        $arDiscounts = array_get($this->arExtraData, 'DscRcgGlobal.DRG_Item', []);
+        if (!empty($arDiscounts)) {
+            foreach ($arDiscounts as $arDiscountItem) {
+                if ((int)$arDiscountItem['IndFactDR'] !== 1) {
+                    continue;
+                }
+
+                $fValue = (float)$arDiscountItem['ValorDR'];
+                if ($arDiscountItem['TpoMovDR'] === 'D') {
+                    $obTotales->MntNoGrv -= $fValue;
+                } else {
+                    $obTotales->MntNoGrv += $fValue;
+                }
+            }
         }
 
         if ($this->arTotals['MntIVATasaMin']) {

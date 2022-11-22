@@ -72,7 +72,7 @@ class Item
                 $fTotal += $this->RecargoMnt;
             }
 
-            $this->MontoItem = $fTotal;
+            $this->MontoItem = round($fTotal, 2);
         }
 
         $this->arAttributes['Cantidad'] = $sValue;
@@ -84,7 +84,7 @@ class Item
         $sValue = abs($sValue);
 
         if ($sValue > 0) {
-            $this->MontoItem = $sValue * $this->Cantidad;
+            $this->MontoItem = round($sValue * $this->Cantidad, 2);
         }
 
         $this->arAttributes['PrecioUnitario'] = $sValue;
