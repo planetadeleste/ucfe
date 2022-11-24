@@ -61,7 +61,8 @@ class Item
             $sValue = 1;
         }
 
-        if ($fUnitValue = $this->PrecioUnitario) {
+        if ($this->hasAttribute('PrecioUnitario')) {
+            $fUnitValue = $this->PrecioUnitario;
             $fTotal = $fUnitValue * $sValue;
 
             if ($this->DescuentoMonto) {
@@ -82,11 +83,7 @@ class Item
     {
         // PrecioUnitario always be positive
         $sValue = abs($sValue);
-
-        if ($sValue > 0) {
-            $this->MontoItem = round($sValue * $this->Cantidad, 2);
-        }
-
+        $this->MontoItem = round($sValue * $this->Cantidad, 2);
         $this->arAttributes['PrecioUnitario'] = $sValue;
     }
 
