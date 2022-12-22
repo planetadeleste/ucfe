@@ -16,10 +16,13 @@ class CfeClient extends Client
     const CFE_CREDIT_NOTE = 'nc';
     const CFE_DEBIT_NOTE = 'nd';
 
-    protected $iTipoMensaje = 820;
+    protected int $iTipoMensaje = 820;
 
     /** @var string Customer email to be used on field EmailEnvioPdfReceptor */
-    protected $sCustomerEmail;
+    protected string $sCustomerEmail;
+
+    /** @var string Adenda */
+    protected string $sAdenda;
 
     /**
      * @return \PlanetaDelEste\Ucfe\Service\CfeResponse
@@ -54,8 +57,12 @@ class CfeClient extends Client
             'Uuid'         => Uuid::uuid4()->toString()
         ];
 
-        if (!empty($this->sCustomerEmail)) {
-            $arData['EmailEnvioPdfReceptor'] = $this->sCustomerEmail;
+        if ($sCustomerEmail = $this->getCustomerEmail()) {
+            $arData['EmailEnvioPdfReceptor'] = $sCustomerEmail;
+        }
+
+        if ($sAdenda = $this->getAdenda()) {
+            $arData['Adenda'] = $sAdenda;
         }
 
         return $this->exec($arData);
@@ -104,6 +111,26 @@ class CfeClient extends Client
     public function getCustomerEmail(): ?string
     {
         return !empty($this->sCustomerEmail) ? $this->sCustomerEmail : null;
+    }
+
+    /**
+     * @param string $sValue
+     *
+     * @return $this
+     */
+    public function setAdenda(string $sValue): self
+    {
+        $this->sAdenda = trim($sValue);
+
+        return $this;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getAdenda(): ?string
+    {
+        return $this->sAdenda ?? null;
     }
 
     /**
