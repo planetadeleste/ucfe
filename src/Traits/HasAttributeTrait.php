@@ -30,6 +30,11 @@ trait HasAttributeTrait
         }
     }
 
+    public function __isset(string $sName)
+    {
+        return isset($this->arAttributes[$sName]);
+    }
+
     public function toArray(): array
     {
         $arData = $this->arAttributes + $this->accessorsToAttribute();

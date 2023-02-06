@@ -34,7 +34,7 @@ class Auth
         string $sCodComercio,
         string $sCodTerminal,
         string $sUrl
-    ) {
+    ): void {
         self::setUser($sUsername);
         self::setPassword($sPassword);
         self::setCodComercio($sCodComercio);
@@ -47,7 +47,7 @@ class Auth
      *
      * @param string $sValue
      */
-    public static function setUser(string $sValue)
+    public static function setUser(string $sValue): void
     {
         self::$sUsername = $sValue;
     }
@@ -57,7 +57,7 @@ class Auth
      *
      * @param string $sValue
      */
-    public static function setPassword(string $sValue)
+    public static function setPassword(string $sValue): void
     {
         self::$sPassword = $sValue;
     }
@@ -67,7 +67,7 @@ class Auth
      *
      * @param string $sValue
      */
-    public static function setCodComercio(string $sValue)
+    public static function setCodComercio(string $sValue): void
     {
         self::$sCodComercio = $sValue;
     }
@@ -77,7 +77,7 @@ class Auth
      *
      * @param string $sValue
      */
-    public static function setCodTerminal(string $sValue)
+    public static function setCodTerminal(string $sValue): void
     {
         self::$sCodTerminal = $sValue;
     }
@@ -87,7 +87,7 @@ class Auth
      *
      * @param string $sUrl
      */
-    public static function setUrl(string $sUrl)
+    public static function setUrl(string $sUrl): void
     {
         self::$sUrl = $sUrl;
     }
@@ -95,7 +95,7 @@ class Auth
     /**
      * @return string
      */
-    public static function getUser(): string
+    public static function getUser(): ?string
     {
         return self::$sUsername;
     }
@@ -103,7 +103,7 @@ class Auth
     /**
      * @return string
      */
-    public static function getPassword(): string
+    public static function getPassword(): ?string
     {
         return self::$sPassword;
     }
@@ -111,7 +111,7 @@ class Auth
     /**
      * @return string
      */
-    public static function getCodComercio(): string
+    public static function getCodComercio(): ?string
     {
         return self::$sCodComercio;
     }
@@ -119,7 +119,7 @@ class Auth
     /**
      * @return string
      */
-    public static function getCodTerminal(): string
+    public static function getCodTerminal(): ?string
     {
         return self::$sCodTerminal;
     }
@@ -127,7 +127,7 @@ class Auth
     /**
      * @return string
      */
-    public static function getUrl(): string
+    public static function getUrl(): ?string
     {
         return self::$sUrl;
     }
