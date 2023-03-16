@@ -2,16 +2,23 @@
 
 namespace PlanetaDelEste\Ucfe;
 
+use PlanetaDelEste\Ucfe\Result\Base;
+use PlanetaDelEste\Ucfe\Result\Resp;
+use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
+use stdClass;
+
 abstract class Response
 {
-    /** @var \PlanetaDelEste\Ucfe\Result\Resp */
+    use HasAttributeTrait;
+
+    /** @var Resp */
     protected $obResponse;
 
     /** @var array */
     protected $arResult = [];
 
     /**
-     * @param \PlanetaDelEste\Ucfe\Result\Base|\stdClass $obResponse
+     * @param Base|stdClass $obResponse
      */
     public function __construct($obResponse)
     {
