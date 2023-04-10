@@ -5,19 +5,19 @@ namespace PlanetaDelEste\Ucfe;
 class Auth
 {
     /** @var string */
-    static protected $sUsername;
+    protected static $sUsername;
 
     /** @var string */
-    static protected $sPassword;
+    protected static $sPassword;
 
     /** @var string */
-    static protected $sCodComercio;
+    protected static $sCodComercio;
 
     /** @var string */
-    static protected $sCodTerminal;
+    protected static $sCodTerminal;
 
     /** @var string */
-    static protected $sUrl;
+    protected static $sUrl;
 
     /**
      * Set all credentials

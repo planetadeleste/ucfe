@@ -20,4 +20,12 @@ class ActEmpresarialResponse extends Response
         $obJson = json_encode($sXml);
         return json_decode($obJson, true);
     }
+
+    /**
+     * @inheritDoc
+     */
+    public function getSortKeys(): array
+    {
+        return [];
+    }
 }

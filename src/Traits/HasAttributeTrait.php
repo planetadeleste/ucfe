@@ -30,46 +30,6 @@ trait HasAttributeTrait
         }
     }
 
-    public function __isset(string $sName)
-    {
-        return isset($this->arAttributes[$sName]);
-    }
-
-    public function toArray(): array
-    {
-        $arData = $this->arAttributes + $this->accessorsToAttribute();
-        $this->sortAttributes($arData);
-        return Collection::make($arData)->map(function ($arItem) {
-            if ($arItem instanceof \DateTime) {
-                return $arItem->format('Y-m-d');
-            }
-            return $arItem;
-        })->all();
-    }
-
-    /**
-     * Key array for sort attributes
-     * @return array
-     */
-    abstract public function getSortKeys(): array;
-
-    public function sortAttributes(array &$arData)
-    {
-        $arSortKeys = $this->getSortKeys();
-        if (empty($arSortKeys)) {
-            return;
-        }
-
-        $arKeys = array_flip($arSortKeys);
-        $result = array_replace($arKeys, $arData); // result = sorted keys + values from input +
-        $arData = array_intersect_key($result, $arData); // remove keys are not existing in input array
-    }
-
-    public function setAttributes(array $arAttrs)
-    {
-        $this->arAttributes = $arAttrs;
-    }
-
     /**
      * Determine if a get accessor exists for an attribute.
      *
@@ -83,16 +43,6 @@ trait HasAttributeTrait
     }
 
     /**
-     * @param string $sKey
-     *
-     * @return bool
-     */
-    public function hasAttribute(string $sKey): bool
-    {
-        return array_key_exists($sKey, $this->arAttributes);
-    }
-
-    /**
      * get accessor method name
      *
      * @param string $sKey
@@ -101,7 +51,7 @@ trait HasAttributeTrait
      */
     public function getAccesorMethod(string $sKey): string
     {
-        return 'get'.Str::studly($sKey).'Attribute';
+        return 'get' . Str::studly($sKey) . 'Attribute';
     }
 
     /**
@@ -125,7 +75,35 @@ trait HasAttributeTrait
      */
     public function getMutatorMethod(string $sKey): string
     {
-        return 'set'.Str::studly($sKey).'Attribute';
+        return 'set' . Str::studly($sKey) . 'Attribute';
+    }
+
+    public function __isset(string $sName)
+    {
+        return isset($this->arAttributes[$sName]);
+    }
+
+    public function toArray(): array
+    {
+        $arData = $this->arAttributes + $this->accessorsToAttribute();
+        $this->sortAttributes($arData);
+        return Collection::make($arData)->map(function ($arItem) {
+            if ($arItem instanceof \DateTime) {
+                return $arItem->format($this->getDateFormat());
+            }
+
+            if (is_array($arItem)) {
+                foreach ($arItem as $sKey => $sValue) {
+                    if (is_object($sValue) && method_exists($sValue, 'toArray')) {
+                        $arItem[$sKey] = $sValue->toArray();
+                    }
+                }
+
+                return $arItem;
+            }
+
+            return is_object($arItem) && method_exists($arItem, 'toArray') ? $arItem->toArray() : $arItem;
+        })->all();
     }
 
     protected function accessorsToAttribute(): array
@@ -149,5 +127,46 @@ trait HasAttributeTrait
         }
 
         return $arAttributes;
+    }
+
+    /**
+     * @param string $sKey
+     *
+     * @return bool
+     */
+    public function hasAttribute(string $sKey): bool
+    {
+        return array_key_exists($sKey, $this->arAttributes);
+    }
+
+    public function sortAttributes(array &$arData)
+    {
+        $arSortKeys = $this->getSortKeys();
+        if (empty($arSortKeys)) {
+            return;
+        }
+
+        $arKeys = array_flip($arSortKeys);
+        $result = array_replace($arKeys, $arData); // result = sorted keys + values from input +
+        $arData = array_intersect_key($result, $arData); // remove keys are not existing in input array
+    }
+
+    /**
+     * Key array for sort attributes
+     * @return array
+     */
+    abstract public function getSortKeys(): array;
+
+    public function setAttributes(array $arAttrs)
+    {
+        $this->arAttributes = $arAttrs;
+    }
+
+    /**
+     * @return string DateTime format
+     */
+    public function getDateFormat(): string
+    {
+        return 'Y-m-d';
     }
 }
