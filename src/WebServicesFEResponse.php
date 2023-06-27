@@ -33,13 +33,16 @@ abstract class WebServicesFEResponse
     /**
      * @return mixed
      */
-    abstract protected function parseResult();
-
-    /**
-     * @return mixed
-     */
     public function getResult()
     {
         return $this->arResult;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected function parseResult()
+    {
+        return $this->obResponse;
     }
 }

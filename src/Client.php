@@ -105,7 +105,7 @@ abstract class Client
         // Set TipoMensaje
         Arr::set($arParams, 'req.Req.TipoMensaje', $this->getTipoMensaje());
 
-        $obResponse = $this->soap()->Invoke($arParams);
+        $obResponse     = $this->soap()->Invoke($arParams);
         $sResponseClass = $this->getResponseClass();
 
         return new $sResponseClass($obResponse);
@@ -148,16 +148,24 @@ abstract class Client
      */
     protected function soap(array $arOptions = []): SoapClient
     {
-        $arOptions = array_merge(['trace' => 1, "cache_wsdl" => WSDL_CACHE_NONE], $arOptions);
+        $arOptions  = array_merge(
+            [
+                'trace'       => true,
+                'cache_wsdl'  => WSDL_CACHE_BOTH,
+                'compression' => SOAP_COMPRESSION_ACCEPT | SOAP_COMPRESSION_GZIP,
+                'user_agent'  => 'Apache-HttpClient/4.5.5 (Java/16.0.1)'
+            ],
+            $arOptions
+        );
         $sSoapClass = $this->getSoapClass();
-        $sUrl = sprintf('https://%s.ucfe.com.uy/', Auth::getUrl());
+        $sUrl       = sprintf('https://%s.ucfe.com.uy/', Auth::getUrl());
         if ($this->inbox) {
             $sUrl .= 'Inbox/';
         }
         $sUrl .= $this->getWsdlUrl();
 
         $this->client = new $sSoapClass($sUrl, $arOptions);
-        $authHeader = new WsseAuthHeader(Auth::getUser(), Auth::getPassword());
+        $authHeader   = new WsseAuthHeader(Auth::getUser(), Auth::getPassword());
         $this->client->__setSoapHeaders([$authHeader]);
 
         return $this->client;
@@ -176,9 +184,18 @@ abstract class Client
      *
      * @return string
      */
-    public function getLastRequestXml(): string
+    public function getLastRequestXml(): ?string
     {
         return $this->client->__getLastRequest();
+    }
+
+    /**
+     * Get headers of last request
+     * @return string|null
+     */
+    public function getLastRequestHeaders(): ?string
+    {
+        return $this->client->__getLastRequestHeaders();
     }
 
     /**
@@ -186,7 +203,7 @@ abstract class Client
      *
      * @return string
      */
-    public function getLastResponseXml(): string
+    public function getLastResponseXml(): ?string
     {
         return $this->client->__getLastResponse();
     }
@@ -208,5 +225,4 @@ abstract class Client
      * @return string
      */
     abstract protected function getResponseClass(): string;
-
 }
