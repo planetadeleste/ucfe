@@ -3,6 +3,7 @@
 namespace PlanetaDelEste\Ucfe\Traits;
 
 use Illuminate\Support\Collection;
+use PlanetaDelEste\GW\Classes\Helper\PriceHelper;
 use PlanetaDelEste\Ucfe\Cfe\CAEData;
 use PlanetaDelEste\Ucfe\Cfe\Compl_Fiscal;
 use PlanetaDelEste\Ucfe\Cfe\Detalle\Item;
@@ -270,6 +271,10 @@ trait CfeTrait
                 foreach ($arItem['RetencPercep'] as $arItemRetenc) {
                     $sCode = $arItemRetenc['CodRet'];
                     $sValue = $arItemRetenc['ValRetPerc'];
+
+                    if (isset($arItem['IndFact']) && (int)$arItem['IndFact'] === 9 && $sValue > 0) {
+                        $sValue = PriceHelper::negative($sValue);
+                    }
 
                     if (!isset($arRetenc[$sCode])) {
                         $arRetenc[$sCode] = new Totales\RetencPercep();
