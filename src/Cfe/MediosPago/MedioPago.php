@@ -2,7 +2,7 @@
 
 namespace PlanetaDelEste\Ucfe\Cfe\MediosPago;
 
-use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
+use PlanetaDelEste\Ucfe\Cfe\CfeItemBase;
 
 /**
  * @property string $CodMP
@@ -11,10 +11,8 @@ use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
  * @property string $OrdenMP
  * @property string $ValorPago
  */
-class MedioPago
+class MedioPago extends CfeItemBase
 {
-    use HasAttributeTrait;
-
     /**
      * @inheritDoc
      */

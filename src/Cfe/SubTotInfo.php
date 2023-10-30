@@ -1,13 +1,15 @@
 <?php namespace PlanetaDelEste\Ucfe\Cfe;
 
-use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
+use PlanetaDelEste\Ucfe\Cfe\SubTotInfo\STI_Item;
 
 /**
- * @property \PlanetaDelEste\Ucfe\Cfe\SubTotInfo\STI_Item $STI_Item
+ * @property STI_Item $STI_Item
  */
-class SubTotInfo
+class SubTotInfo extends CfeItemBase
 {
-    use HasAttributeTrait;
+    protected array $arRelationList = [
+        'STI_Item' => STI_Item::class,
+    ];
 
     /**
      * @inheritDoc

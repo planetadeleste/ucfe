@@ -2,7 +2,7 @@
 
 namespace PlanetaDelEste\Ucfe\Cfe\DscRcgGlobal;
 
-use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
+use PlanetaDelEste\Ucfe\Cfe\CfeItemBase;
 
 /**
  * @property string $NroLinDR  Numero Secuencial de Linea
@@ -34,10 +34,8 @@ use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
  *                                 moneda extranjera para su reventa y la contrapartida es en moneda local (valida
  *                                 A-C21=1)</pre>
  */
-class DRG_Item
+class DRG_Item extends CfeItemBase
 {
-    use HasAttributeTrait;
-
     /**
      * @inheritDoc
      */

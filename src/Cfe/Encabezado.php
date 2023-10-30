@@ -1,16 +1,24 @@
 <?php namespace PlanetaDelEste\Ucfe\Cfe;
 
-use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
+use PlanetaDelEste\Ucfe\Cfe\Encabezado\Emisor;
+use PlanetaDelEste\Ucfe\Cfe\Encabezado\IdDoc;
+use PlanetaDelEste\Ucfe\Cfe\Encabezado\Receptor;
+use PlanetaDelEste\Ucfe\Cfe\Encabezado\Totales;
 
 /**
- * @property \PlanetaDelEste\Ucfe\Cfe\Encabezado\Emisor   $Emisor
- * @property \PlanetaDelEste\Ucfe\Cfe\Encabezado\IdDoc    $IdDoc
- * @property \PlanetaDelEste\Ucfe\Cfe\Encabezado\Receptor $Receptor
- * @property \PlanetaDelEste\Ucfe\Cfe\Encabezado\Totales  $Totales
+ * @property Emisor   $Emisor
+ * @property IdDoc    $IdDoc
+ * @property Receptor $Receptor
+ * @property Totales  $Totales
  */
-class Encabezado
+class Encabezado extends CfeItemBase
 {
-    use HasAttributeTrait;
+    protected array $arRelationList = [
+        'Emisor'   => Emisor::class,
+        'IdDoc'    => IdDoc::class,
+        'Receptor' => Receptor::class,
+        'Totales'  => Totales::class,
+    ];
 
     /**
      * @inheritDoc

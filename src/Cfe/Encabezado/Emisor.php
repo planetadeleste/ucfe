@@ -2,7 +2,7 @@
 
 namespace PlanetaDelEste\Ucfe\Cfe\Encabezado;
 
-use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
+use PlanetaDelEste\Ucfe\Cfe\CfeItemBase;
 
 /**
  * @property string $CdgDGISucur
@@ -18,11 +18,8 @@ use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
  * @property string $RznSoc
  * @property string $Telefono
  */
-class Emisor
+class Emisor extends CfeItemBase
 {
-    use HasAttributeTrait;
-
-
     /**
      * @inheritDoc
      */

@@ -2,8 +2,6 @@
 
 namespace PlanetaDelEste\Ucfe\Cfe;
 
-use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
-
 /**
  * @property string $CAEEspecial
  * @property string $CAE_ID
@@ -12,10 +10,8 @@ use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
  * @property string $FecVenc
  * @property string $HNro
  */
-class CAEData
+class CAEData extends CfeItemBase
 {
-    use HasAttributeTrait;
-
     /**
      * @inheritDoc
      */

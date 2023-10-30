@@ -2,7 +2,7 @@
 
 namespace PlanetaDelEste\Ucfe\Cfe\Encabezado;
 
-use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
+use PlanetaDelEste\Ucfe\Cfe\CfeItemBase;
 
 /**
  * @property string $CP           Codigo Postal
@@ -20,10 +20,8 @@ use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
  * @property string $TipoDocRecep Tipo de Documento del Receptor (1: NIE, 2: RUC, 3: CI, 4:otro, 5 pasaporte, 6 DNI, 7
  *           NIFE)
  */
-class Receptor
+class Receptor extends CfeItemBase
 {
-    use HasAttributeTrait;
-
     /**
      * @inheritDoc
      */

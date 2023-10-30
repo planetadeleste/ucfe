@@ -1,13 +1,12 @@
 <?php namespace PlanetaDelEste\Ucfe\Cfe;
 
-use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
+use PlanetaDelEste\Ucfe\Cfe\Detalle\Item;
 
 /**
- * @property \PlanetaDelEste\Ucfe\Cfe\Detalle\Item[] $item
+ * @property Item[] $item
  */
-class Detalle
+class Detalle extends CfeItemBase
 {
-    use HasAttributeTrait;
 
     /**
      * @inheritDoc
@@ -15,5 +14,10 @@ class Detalle
     public function getSortKeys(): array
     {
         return ['Item'];
+    }
+
+    public function setItemAttribute(array $sValue = [])
+    {
+        $this->setAttributeList($sValue, 'Item', Item::class);
     }
 }

@@ -2,17 +2,18 @@
 
 namespace PlanetaDelEste\Ucfe\Cfe\Encabezado;
 
+use Carbon\Carbon;
 use Illuminate\Validation\Rule;
-use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
+use PlanetaDelEste\Ucfe\Cfe\CfeItemBase;
 
 /**
  * @property string $ClauVenta
  * @property string $CodPaisProp
  * @property string $DocProp
  * @property string $DocPropExt
- * @property string $FchEmis       Date format YYYY-MM-DD
+ * @property Carbon $FchEmis       Date format YYYY-MM-DD
  * @property string $FchValor
- * @property string $FchVenc       Date format YYYY-MM-DD
+ * @property Carbon $FchVenc       Date format YYYY-MM-DD
  * @property int    $FmaPago       Values: 1 (Contado) | 2 (Credito)
  * @property string $IVAalDia
  * @property string $IndCobPropia
@@ -34,10 +35,8 @@ use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
  * @property string $TipoTraslado  Value: 1 (Venta) | 2 (Traslados internos)
  * @property string $ViaTransp
  */
-class IdDoc
+class IdDoc extends CfeItemBase
 {
-    use HasAttributeTrait;
-
     protected array $arCfeTypes = [
         101,
         102,

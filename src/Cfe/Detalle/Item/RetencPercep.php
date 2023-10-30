@@ -2,7 +2,7 @@
 
 namespace PlanetaDelEste\Ucfe\Cfe\Detalle\Item;
 
-use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
+use PlanetaDelEste\Ucfe\Cfe\CfeItemBase;
 
 /**
  * @property string $CodRet
@@ -11,10 +11,8 @@ use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
  * @property string $Tasa
  * @property string $ValRetPerc
  */
-class RetencPercep
+class RetencPercep extends CfeItemBase
 {
-    use HasAttributeTrait;
-
     /**
      * @inheritDoc
      */

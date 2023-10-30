@@ -2,16 +2,14 @@
 
 namespace PlanetaDelEste\Ucfe\Cfe\Detalle\Item;
 
-use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
+use PlanetaDelEste\Ucfe\Cfe\CfeItemBase;
 
 /**
  * @property string $RecargoTipo
  * @property string $RecargoVal
  */
-class SubRecargo
+class SubRecargo extends CfeItemBase
 {
-    use HasAttributeTrait;
-
     /**
      * @inheritDoc
      */

@@ -2,7 +2,7 @@
 
 namespace PlanetaDelEste\Ucfe\Cfe\Compl_Fiscal;
 
-use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
+use PlanetaDelEste\Ucfe\Cfe\CfeItemBase;
 
 /**
  * @property string $DocMdte
@@ -11,10 +11,8 @@ use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
  * @property string $RUCEmisor
  * @property string $TipoDocMdte
  */
-class Compl_Fiscal_Data
+class Compl_Fiscal_Data extends CfeItemBase
 {
-    use HasAttributeTrait;
-
     /**
      * @inheritDoc
      */

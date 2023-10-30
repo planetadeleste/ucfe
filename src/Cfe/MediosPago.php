@@ -2,20 +2,23 @@
 
 namespace PlanetaDelEste\Ucfe\Cfe;
 
-use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
+use PlanetaDelEste\Ucfe\Cfe\MediosPago\MedioPago;
 
 /**
- * @property \PlanetaDelEste\Ucfe\Cfe\MediosPago\MedioPago[] $MedioPago
+ * @property MedioPago[] $MedioPago
  */
-class MediosPago
+class MediosPago extends CfeItemBase
 {
-    use HasAttributeTrait;
-
     /**
      * @inheritDoc
      */
     public function getSortKeys(): array
     {
         return ['MedioPago'];
+    }
+
+    public function setMedioPagoAttribute(array $sValue = [])
+    {
+        $this->setAttributeList($sValue, 'MedioPago', MedioPago::class);
     }
 }

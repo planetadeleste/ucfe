@@ -2,16 +2,16 @@
 
 namespace PlanetaDelEste\Ucfe\Cfe\Detalle;
 
+use PlanetaDelEste\Ucfe\Cfe\CfeItemBase;
 use PlanetaDelEste\Ucfe\Cfe\Detalle\Item\CodItem;
 use PlanetaDelEste\Ucfe\Cfe\Detalle\Item\RetencPercep;
 use PlanetaDelEste\Ucfe\Cfe\Detalle\Item\SubDescuento;
 use PlanetaDelEste\Ucfe\Cfe\Detalle\Item\SubRecargo;
-use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
 
 /**
- * @property int          $NroLinDet Numero Secuencial de Linea
- * @property CodItem      $CodItem   Codificacion del Item
- * @property int          $IndFact   Indicador de Facturación (Item_Det_Fact)
+ * @property int          $NroLinDet      Numero Secuencial de Linea
+ * @property CodItem      $CodItem        Codificacion del Item
+ * @property int          $IndFact        Indicador de Facturación (Item_Det_Fact)
  *                                 <pre>
  *                                 1:  Exento de IVA
  *                                 2:  Gravado a Tasa Mínima
@@ -25,26 +25,26 @@ use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
  *                                 12: IVA en suspenso
  *                                 16: Sólo para ítems vendidos por contribuyentes con obligación IVA mínimo,
  *                                     Monotributo o Monotributo MIDES</pre>
- * @property string       $IndAgenteResp Indicador Agente Retenedor
- * @property string       $NomItem Nombre del Item
+ * @property string       $IndAgenteResp  Indicador Agente Retenedor
+ * @property string       $NomItem        Nombre del Item
  * @property string       $NCM
- * @property string       $DscItem Descripcion adicional del Item
- * @property int          $Cantidad Cantidad del ítem. Se admite negativo sólo para eliminar un ítem del propio CFE.
- * @property string       $UniMed Unidad de Medida
+ * @property string       $DscItem        Descripcion adicional del Item
+ * @property int          $Cantidad       Cantidad del ítem. Se admite negativo sólo para eliminar un ítem del propio
+ *           CFE.
+ * @property string       $UniMed         Unidad de Medida
  * @property float        $PrecioUnitario Precio Unitario
- * @property float        $DescuentoPct Porcentaje de Descuento
+ * @property float        $DescuentoPct   Porcentaje de Descuento
  * @property float        $DescuentoMonto Totaliza los descuentos otorgados al item
- * @property SubDescuento $SubDescuento Distribucion del Descuento
- * @property float        $RecargoPct Recargo en % al item
- * @property float        $RecargoMnt Totaliza los recargos otorgados al item
- * @property SubRecargo   $SubRecargo Tabla de Distribución del Recargo
- * @property RetencPercep $RetencPercep Codigo de Retencion / Percepcion
- * @property float        $MontoItem Monto por Linea de Detalle. Corresponde al Monto Neto, a menos que MntBruto Indique lo Contrario
+ * @property SubDescuento $SubDescuento   Distribucion del Descuento
+ * @property float        $RecargoPct     Recargo en % al item
+ * @property float        $RecargoMnt     Totaliza los recargos otorgados al item
+ * @property SubRecargo   $SubRecargo     Tabla de Distribución del Recargo
+ * @property RetencPercep $RetencPercep   Codigo de Retencion / Percepcion
+ * @property float        $MontoItem      Monto por Linea de Detalle. Corresponde al Monto Neto, a menos que MntBruto
+ *           Indique lo Contrario
  */
-class Item
+class Item extends CfeItemBase
 {
-    use HasAttributeTrait;
-
     public function getUniMedAttribute(): string
     {
         return 'N/A';
@@ -63,7 +63,7 @@ class Item
 
         if ($this->hasAttribute('PrecioUnitario')) {
             $fUnitValue = $this->PrecioUnitario;
-            $fTotal = $fUnitValue * $sValue;
+            $fTotal     = $fUnitValue * $sValue;
 
             if ($this->DescuentoMonto) {
                 $fTotal -= $this->DescuentoMonto;
@@ -82,8 +82,8 @@ class Item
     public function setPrecioUnitarioAttribute($sValue): void
     {
         // PrecioUnitario always be positive
-        $sValue = abs($sValue);
-        $this->MontoItem = round($sValue * $this->Cantidad, 2);
+        $sValue                               = abs($sValue);
+        $this->MontoItem                      = round($sValue * $this->Cantidad, 2);
         $this->arAttributes['PrecioUnitario'] = $sValue;
     }
 

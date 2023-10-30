@@ -2,7 +2,7 @@
 
 namespace PlanetaDelEste\Ucfe\Cfe\Referencia;
 
-use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
+use PlanetaDelEste\Ucfe\Cfe\CfeItemBase;
 
 /**
  * @property int    $NroLinRef Numero Secuencial de Linea
@@ -13,10 +13,8 @@ use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
  * @property string $RazonRef  Razon Explicita por la que se Referencia el Documento
  * @property string $FechaCFEref
  */
-class Referencia
+class Referencia extends CfeItemBase
 {
-    use HasAttributeTrait;
-
     /**
      * @inheritDoc
      */

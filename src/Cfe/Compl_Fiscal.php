@@ -2,15 +2,17 @@
 
 namespace PlanetaDelEste\Ucfe\Cfe;
 
-use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
+use PlanetaDelEste\Ucfe\Cfe\Compl_Fiscal\Compl_Fiscal_Data;
 
 /**
- * @property \PlanetaDelEste\Ucfe\Cfe\Compl_Fiscal\Compl_Fiscal_Data $Compl_Fiscal_Data
- * @property string                                                  $EncryptedData
+ * @property Compl_Fiscal_Data $Compl_Fiscal_Data
+ * @property string            $EncryptedData
  */
-class Compl_Fiscal
+class Compl_Fiscal extends CfeItemBase
 {
-    use HasAttributeTrait;
+    protected array $arRelationList = [
+        'Compl_Fiscal_Data' => Compl_Fiscal_Data::class,
+    ];
 
     /**
      * @inheritDoc

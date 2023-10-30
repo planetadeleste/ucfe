@@ -6,27 +6,55 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
+/**
+ * @property array $arCast
+ */
 trait HasAttributeTrait
 {
-    protected $arAttributes = [];
+    protected array $arAttributes = [];
 
     public function __get(string $sName)
     {
-        $sValue = $this->arAttributes[$sName] ?? null;
+        return $this->getAttribute($sName);
+    }
 
-        if ($this->hasAccessor($sName)) {
-            return $this->{$this->getAccesorMethod($sName)}($sValue);
+    public function __set(string $sName, $sValue)
+    {
+        $this->setAttribute($sName, $sValue);
+    }
+
+    /**
+     * @param string $sKey
+     * @param mixed  $default
+     * @return mixed
+     */
+    public function getAttribute(string $sKey, $default = null)
+    {
+        $sValue = array_get($this->arAttributes, $sKey, $default);
+
+        if ($this->hasAccessor($sKey)) {
+            return $this->{$this->getAccesorMethod($sKey)}($sValue);
         }
 
         return $sValue;
     }
 
-    public function __set(string $sName, $sValue)
+    /**
+     * @param string $sKey
+     * @param mixed  $sValue
+     * @param bool   $bWithoutMutate
+     * @return void
+     */
+    public function setAttribute(string $sKey, $sValue, bool $bWithoutMutate = false): void
     {
-        $this->arAttributes[$sName] = $sValue;
+        if ($this->hasCast($sKey)) {
+            $sValue = $this->castAttribute($sKey, $sValue);
+        }
 
-        if ($this->hasMutator($sName)) {
-            $this->{$this->getMutatorMethod($sName)}($sValue);
+        array_set($this->arAttributes, $sKey, $sValue);
+
+        if ($bWithoutMutate === false && $this->hasMutator($sKey)) {
+            $this->{$this->getMutatorMethod($sKey)}($sValue);
         }
     }
 
@@ -109,7 +137,7 @@ trait HasAttributeTrait
     protected function accessorsToAttribute(): array
     {
         $arMethods = array_filter(get_class_methods($this), function ($sName) {
-            return substr($sName, 0, 3) === 'get' && substr($sName, -9) === 'Attribute';
+            return $sName !== 'getAttribute' && substr($sName, 0, 3) === 'get' && substr($sName, -9) === 'Attribute';
         });
 
         if (empty($arMethods)) {
@@ -147,19 +175,26 @@ trait HasAttributeTrait
         }
 
         $arKeys = array_flip($arSortKeys);
-        $result = array_replace($arKeys, $arData); // result = sorted keys + values from input +
+        $result = array_replace($arKeys, $arData);       // result = sorted keys + values from input +
         $arData = array_intersect_key($result, $arData); // remove keys are not existing in input array
     }
 
     /**
      * Key array for sort attributes
+     *
      * @return array
      */
     abstract public function getSortKeys(): array;
 
     public function setAttributes(array $arAttrs)
     {
-        $this->arAttributes = $arAttrs;
+        if (!\Arr::isAssoc($arAttrs)) {
+            return;
+        }
+
+        foreach ($arAttrs as $sKey => $sValue) {
+            $this->setAttribute($sKey, $sValue);
+        }
     }
 
     /**
@@ -168,5 +203,42 @@ trait HasAttributeTrait
     public function getDateFormat(): string
     {
         return 'Y-m-d';
+    }
+
+    protected function hasCast(string $sKey): bool
+    {
+        return isset($this->arCast) && array_key_exists($sKey, $this->arCast);
+    }
+
+    protected function castAttribute(string $sKey, $sValue)
+    {
+        if (!$this->hasCast($sKey) || empty($sValue)) {
+            return $sValue;
+        }
+
+        switch ($this->arCast[$sKey]) {
+            case 'int':
+            case 'integer':
+                return (int)$sValue;
+            case 'real':
+            case 'float':
+            case 'double':
+                return (float)$sValue;
+            case 'decimal':
+                return round((float)$sValue, 2);
+            case 'bool':
+                return (bool)$sValue;
+            case 'array':
+            case 'json':
+                return is_string($sValue) ? json_decode($sValue, true) : $sValue;
+            case 'object':
+                return is_string($sValue) ? json_decode($sValue, false) : $sValue;
+            case 'date':
+            case 'datetime':
+            case 'timestamp':
+                return Carbon::parse($sValue);
+            default:
+                return $sValue;
+        }
     }
 }

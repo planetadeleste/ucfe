@@ -2,20 +2,24 @@
 
 namespace PlanetaDelEste\Ucfe\Cfe;
 
-use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
+use PlanetaDelEste\Ucfe\Cfe\DscRcgGlobal\DRG_Item;
 
 /**
- * @property \PlanetaDelEste\Ucfe\Cfe\DscRcgGlobal\DRG_Item[] $DRG_Item Descuentos y/o Recargos que aumentan o disminuyen la base del impuesto
+ * @property DRG_Item[] $DRG_Item Descuentos y/o Recargos que aumentan o
+ *           disminuyen la base del impuesto
  */
-class DscRcgGlobal
+class DscRcgGlobal extends CfeItemBase
 {
-    use HasAttributeTrait;
-
     /**
      * @inheritDoc
      */
     public function getSortKeys(): array
     {
         return ['DRG_Item'];
+    }
+
+    public function setDRGItemAttribute(array $sValue = [])
+    {
+        $this->setAttributeList($sValue, 'DRG_Item', DRG_Item::class);
     }
 }

@@ -2,16 +2,14 @@
 
 namespace PlanetaDelEste\Ucfe\Cfe\Encabezado\Totales;
 
-use PlanetaDelEste\Ucfe\Traits\HasAttributeTrait;
+use PlanetaDelEste\Ucfe\Cfe\CfeItemBase;
 
 /**
  * @property string $CodRet
  * @property string $ValRetPerc
  */
-class RetencPercep
+class RetencPercep extends CfeItemBase
 {
-    use HasAttributeTrait;
-
     /**
      * @inheritDoc
      */
