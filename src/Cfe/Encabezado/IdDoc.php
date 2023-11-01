@@ -38,27 +38,50 @@ use PlanetaDelEste\Ucfe\Cfe\CfeItemBase;
 class IdDoc extends CfeItemBase
 {
     protected array $arCfeTypes = [
-        101,
-        102,
-        103,
-        111,
-        112,
-        113,
-        181,
-        182,
-        121,
-        122,
-        123,
-        124,
-        131,
-        132,
-        133,
-        141,
-        142,
-        143,
-        151,
-        152,
-        153
+        101, // e-Ticket
+        102, // Nota de Crédito de e-Ticket
+        103, // Nota de Débito de e-Ticket
+        111, // e-Factura
+        112, // Nota de Crédito de e-Factura
+        113, // Nota de Débito de e-Factura
+        181, // e-Remito
+        182, // e-Resguardo
+        121, // e-Factura Exportación
+        122, // Nota de Crédito de e-Factura Exportación
+        123, // Nota de Débito de e-Factura Exportación
+        124, // e-Remito de Exportación
+        131, // e-Ticket Venta por Cuenta Ajena
+        132, // Nota de Crédito de e-Ticket Venta por Cuenta Ajena
+        133, // Nota de Débito de e-Ticket Venta por Cuenta Ajena
+        141, // e-Factura Venta por Cuenta Ajena
+        142, // Nota de Crédito de e-Factura Venta por Cuenta Ajena
+        143, // Nota de Débito de e-Factura Venta por Cuenta Ajena
+        151, // e-Boleta de entrada
+        152, // Nota de crédito de e-Boleta de entrada
+        153, // Nota de débito de e-Boleta de entrada
+
+        // CONTINGENCY
+        201,
+        202,
+        203,
+        211,
+        212,
+        213,
+        281,
+        282,
+        221,
+        222,
+        223,
+        224,
+        231,
+        232,
+        233,
+        241,
+        242,
+        243,
+        251,
+        252,
+        253,
     ];
 
     public function getSortKeys(): array
