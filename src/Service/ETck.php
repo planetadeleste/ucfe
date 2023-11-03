@@ -15,7 +15,7 @@ class ETck extends CfeClient
      */
     public function getType(): string
     {
-        return 'eTck';
+        return Factory::TYPE_ETCK;
     }
 
     public function getTipoCFE(): int

@@ -15,7 +15,7 @@ class EResg extends CfeClient
      */
     public function getType(): string
     {
-        return 'eResg';
+        return Factory::TYPE_ERESG;
     }
 
     public function getTipoCFE(): int

@@ -15,7 +15,7 @@ class ERem extends CfeClient
      */
     public function getType(): string
     {
-        return 'eRem';
+        return Factory::TYPE_EREM;
     }
 
     /**

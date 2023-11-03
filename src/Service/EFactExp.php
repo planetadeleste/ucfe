@@ -15,7 +15,7 @@ class EFactExp extends CfeClient
      */
     public function getType(): string
     {
-        return 'eFact_Exp';
+        return Factory::TYPE_EFACT_EXP;
     }
 
     /**

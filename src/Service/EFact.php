@@ -15,7 +15,7 @@ class EFact extends CfeClient
      */
     public function getType(): string
     {
-        return 'eFact';
+        return Factory::TYPE_EFACT;
     }
 
     /**

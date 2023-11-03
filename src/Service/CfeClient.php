@@ -24,6 +24,8 @@ class CfeClient extends Client
     /** @var string Adenda */
     protected string $sAdenda;
 
+    protected bool $bContingency = false;
+
     /**
      * @return \PlanetaDelEste\Ucfe\Service\CfeResponse
      * @throws \Exception
@@ -111,6 +113,28 @@ class CfeClient extends Client
     public function getCustomerEmail(): ?string
     {
         return !empty($this->sCustomerEmail) ? $this->sCustomerEmail : null;
+    }
+
+    /**
+     * Set invoice as contingency. CFE code starts with 2
+     * @param bool $bValue
+     * @return $this
+     */
+    public function setContingency(bool $bValue): self
+    {
+        $this->bContingency = $bValue;
+
+        return $this;
+    }
+
+
+    /**
+     * Get invoice as contingency. CFE code starts with 2
+     * @return bool
+     */
+    public function getContingency(): bool
+    {
+        return $this->bContingency;
     }
 
     /**

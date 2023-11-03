@@ -79,6 +79,11 @@ trait CfeTrait
     /** @var string Nota de Crédito|Débito [nc|nb] */
     protected $noteType = null;
 
+    public function getFinalCFECode(): int
+    {
+        return $this->getContingency() ? $this->getTipoCFE() + 100 : $this->getTipoCFE();
+    }
+
     public function getRules(): array
     {
         return $this->rules;
@@ -111,7 +116,7 @@ trait CfeTrait
         /** @var IdDoc $obIdDoc */
         $obIdDoc = $this->arEncabezado['IdDoc'];
         if ($obIdDoc) {
-            $obIdDoc->TipoCFE = $this->getTipoCFE();
+            $obIdDoc->TipoCFE = $this->getFinalCFECode();
         }
 
         $this->arData['Encabezado'] = Collection::make($this->arEncabezado)
@@ -505,7 +510,7 @@ trait CfeTrait
     public function idDoc(): IdDoc
     {
         $obIdDoc = new IdDoc();
-        $obIdDoc->TipoCFE = $this->getTipoCFE();
+        $obIdDoc->TipoCFE = $this->getFinalCFECode();
         return $this->arEncabezado['IdDoc'] = $obIdDoc;
     }
 

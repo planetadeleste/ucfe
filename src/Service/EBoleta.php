@@ -15,7 +15,7 @@ class EBoleta extends CfeClient
      */
     public function getType(): string
     {
-        return 'eBoleta';
+        return Factory::TYPE_EBOLETA;
     }
 
     /**
