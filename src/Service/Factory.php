@@ -22,7 +22,6 @@ class Factory
     public static function make(string $sType)
     {
         $sClass = __NAMESPACE__ . '\\' . Str::studly($sType);
-        gwclock($sType, $sClass);
 
         return new $sClass();
     }
