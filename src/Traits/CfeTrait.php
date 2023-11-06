@@ -158,7 +158,7 @@ trait CfeTrait
 
         // Sum items value
         foreach ($this->getItems() as $arItem) {
-            if (!isset($arItem['IndFact']) || !in_array((int)$arItem['IndFact'], [1, 16])) {
+            if (!isset($arItem['IndFact']) || !in_array((int)$arItem['IndFact'], [1, 16, 10])) {
                 continue;
             }
 
@@ -262,38 +262,13 @@ trait CfeTrait
 
         // Resguardo
         if ($this->getTipoCFE() === 182) {
-            if ($this->arTotals['MntTotRetenido']) {
-                $obTotales->MntTotRetenido = $this->arTotals['MntTotRetenido'];
-                $obTotales->CantLinDet = count($this->getItems());
-            }
+            $this->setResgTotals($obTotales);
+            return;
+        }
 
-            $arRetenc = [];
-            foreach ($this->getItems() as $arItem) {
-                if (!isset($arItem['RetencPercep'])) {
-                    continue;
-                }
-
-                foreach ($arItem['RetencPercep'] as $arItemRetenc) {
-                    $sCode = $arItemRetenc['CodRet'];
-                    $sValue = $arItemRetenc['ValRetPerc'];
-
-                    if (isset($arItem['IndFact']) && (int)$arItem['IndFact'] === 9 && $sValue > 0) {
-                        $sValue = PriceHelper::negative($sValue);
-                    }
-
-                    if (!isset($arRetenc[$sCode])) {
-                        $arRetenc[$sCode] = new Totales\RetencPercep();
-                        $arRetenc[$sCode]->CodRet = $sCode;
-                        $arRetenc[$sCode]->ValRetPerc = $sValue;
-                    } else {
-                        $arRetenc[$sCode]->ValRetPerc += $sValue;
-                    }
-                }
-            }
-
-            $obTotales->RetencPercep = array_map(function (Totales\RetencPercep $obReten) {
-                return $obReten->toArray();
-            }, array_values($arRetenc));
+        // Factura de Exportación
+        if ($this->getTipoCFE() === 121) {
+            $this->setExportTotals($obTotales, $fTotal);
             return;
         }
 
@@ -362,6 +337,58 @@ trait CfeTrait
 
 
         $obTotales->CantLinDet = count($this->arDetalle['Item']);
+    }
+
+    protected function setExportTotals(Totales $obTotales, float $fTotal)
+    {
+        if ($this->getTipoCFE() !== 121) {
+            return;
+        }
+
+        $obTotales->MntTotal = $fTotal;
+        $obTotales->MntPagar = $fTotal;
+        $obTotales->MntExpoyAsim = $fTotal;
+        $obTotales->CantLinDet = count($this->arDetalle['Item']);
+    }
+
+    protected function setResgTotals(Totales $obTotales)
+    {
+        if ($this->getTipoCFE() !== 182) {
+            return;
+        }
+
+        if ($this->arTotals['MntTotRetenido']) {
+            $obTotales->MntTotRetenido = $this->arTotals['MntTotRetenido'];
+            $obTotales->CantLinDet = count($this->getItems());
+        }
+
+        $arRetenc = [];
+        foreach ($this->getItems() as $arItem) {
+            if (!isset($arItem['RetencPercep'])) {
+                continue;
+            }
+
+            foreach ($arItem['RetencPercep'] as $arItemRetenc) {
+                $sCode = $arItemRetenc['CodRet'];
+                $sValue = $arItemRetenc['ValRetPerc'];
+
+                if (isset($arItem['IndFact']) && (int)$arItem['IndFact'] === 9 && $sValue > 0) {
+                    $sValue = PriceHelper::negative($sValue);
+                }
+
+                if (!isset($arRetenc[$sCode])) {
+                    $arRetenc[$sCode] = new Totales\RetencPercep();
+                    $arRetenc[$sCode]->CodRet = $sCode;
+                    $arRetenc[$sCode]->ValRetPerc = $sValue;
+                } else {
+                    $arRetenc[$sCode]->ValRetPerc += $sValue;
+                }
+            }
+        }
+
+        $obTotales->RetencPercep = array_map(function (Totales\RetencPercep $obReten) {
+            return $obReten->toArray();
+        }, array_values($arRetenc));
     }
 
     /**
