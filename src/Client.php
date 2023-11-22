@@ -3,6 +3,7 @@
 namespace PlanetaDelEste\Ucfe;
 
 use Illuminate\Support\Arr;
+use PlanetaDelEste\Ucfe\Result\Base;
 use SoapClient;
 
 abstract class Client
@@ -11,10 +12,12 @@ abstract class Client
     protected $client;
 
     /** @var bool Add "Inbox" part to ws url */
-    protected $inbox = true;
+    protected bool $inbox = true;
 
     /** @var \PlanetaDelEste\Ucfe\WsseAuthHeader */
     protected $auth;
+
+    protected string $url = '';
 
     public static function __callStatic(string $name, array $arArgs = [])
     {
@@ -105,8 +108,14 @@ abstract class Client
         // Set TipoMensaje
         Arr::set($arParams, 'req.Req.TipoMensaje', $this->getTipoMensaje());
 
+        /** @var Base $obResponse */
+        $now            = microtime(true);
         $obResponse     = $this->soap()->Invoke($arParams);
         $sResponseClass = $this->getResponseClass();
+        $elapsed        = microtime(true) - $now;
+
+        $obResponse->elapsed = $elapsed;
+        $obResponse->url     = $this->url;
 
         return new $sResponseClass($obResponse);
     }
@@ -164,6 +173,7 @@ abstract class Client
         }
         $sUrl .= $this->getWsdlUrl();
 
+        $this->url    = $sUrl;
         $this->client = new $sSoapClass($sUrl, $arOptions);
         $authHeader   = new WsseAuthHeader(Auth::getUser(), Auth::getPassword());
         $this->client->__setSoapHeaders([$authHeader]);
@@ -191,6 +201,7 @@ abstract class Client
 
     /**
      * Get headers of last request
+     *
      * @return string|null
      */
     public function getLastRequestHeaders(): ?string

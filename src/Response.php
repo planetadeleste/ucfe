@@ -15,7 +15,12 @@ abstract class Response
     protected $obResponse;
 
     /** @var array */
-    protected $arResult = [];
+    protected array $arResult = [];
+
+    /** @var int */
+    protected int $elapsed = 0;
+
+    protected string $url = '';
 
     /**
      * @param Base|stdClass $obResponse
@@ -24,13 +29,24 @@ abstract class Response
     {
         if (is_object($obResponse)) {
             $this->obResponse = $obResponse->InvokeResult->Resp;
-            $this->arResult = $this->parseResult();
+            $this->elapsed    = $obResponse->elapsed;
+            $this->url        = $obResponse->url;
+            $this->arResult   = $this->parseResult();
         }
     }
 
     public function getResult(): array
     {
         return $this->arResult;
+    }
+
+    public function getElapsed(): int
+    {
+        return $this->elapsed;
+    }
+
+    public function getUrl(): string {
+        return $this->url;
     }
 
     /**

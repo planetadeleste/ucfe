@@ -3,9 +3,10 @@
 namespace PlanetaDelEste\Ucfe\Result;
 
 /**
- * @property-read \PlanetaDelEste\Ucfe\Result\Invoke InvokeResult
+ * @property \PlanetaDelEste\Ucfe\Result\Invoke InvokeResult
+ * @property int                                $elapsed
+ * @property string                             $url
  */
 class Base
 {
-
 }
