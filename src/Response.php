@@ -17,8 +17,8 @@ abstract class Response
     /** @var array */
     protected array $arResult = [];
 
-    /** @var int */
-    protected int $elapsed = 0;
+    /** @var float */
+    protected float $elapsed = 0;
 
     protected string $url = '';
 
@@ -40,7 +40,7 @@ abstract class Response
         return $this->arResult;
     }
 
-    public function getElapsed(): int
+    public function getElapsed(): float
     {
         return $this->elapsed;
     }
