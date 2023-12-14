@@ -9,17 +9,51 @@ use PlanetaDelEste\Ucfe\WebServicesFE;
  * @property integer $tipoCfe
  * @property string  $serieCfe
  * @property integer $numeroCfe
+ * @property array   $nombreParametros
+ * @property array   $valoresParametros
  *
  * @method GetPdfResponse send()
  */
 class GetPdf extends WebServicesFE
 {
+    protected bool $roll    = false;
+    protected bool $addenda = false;
+
+    public function setRoll(bool $roll = true): void
+    {
+        $this->roll = $roll;
+
+        if ($this->roll) {
+            $this->setParameter('formato', 'rollo');
+        }
+    }
+
+    public function setAddenda(bool $addenda = true): void
+    {
+        $this->addenda = $addenda;
+
+        if ($this->addenda) {
+            $this->setParameter('adenda', 'true');
+        }
+    }
+
+    protected function setParameter(string $sKey, $sValue)
+    {
+        if (!$this->nombreParametros) {
+            $this->nombreParametros  = [];
+            $this->valoresParametros = [];
+        }
+
+        $this->nombreParametros[]  = $sKey;
+        $this->valoresParametros[] = $sValue;
+    }
+
     /**
      * @inheritDoc
      */
     public function getServiceName(): string
     {
-        return 'ObtenerPdf';
+        return $this->roll || $this->addenda ? 'ObtenerPdfConParametros' : 'ObtenerPdf';
     }
 
     /**
@@ -27,7 +61,14 @@ class GetPdf extends WebServicesFE
      */
     public function getSortKeys(): array
     {
-        return ['rut', 'tipoCfe', 'serieCfe', 'numeroCfe'];
+        $arReturn = ['rut', 'tipoCfe', 'serieCfe', 'numeroCfe'];
+
+        if ($this->roll || $this->addenda) {
+            $arReturn[] = 'nombreParametros';
+            $arReturn[] = 'valoresParametros';
+        }
+
+        return $arReturn;
     }
 
     /**
