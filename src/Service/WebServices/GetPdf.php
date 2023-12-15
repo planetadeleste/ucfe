@@ -44,8 +44,8 @@ class GetPdf extends WebServicesFE
             $this->valoresParametros = [];
         }
 
-        $this->nombreParametros[]  = $sKey;
-        $this->valoresParametros[] = $sValue;
+        $this->nombreParametros  = [...$this->nombreParametros, $sKey];
+        $this->valoresParametros = [...$this->valoresParametros, $sValue];
     }
 
     /**
@@ -76,6 +76,6 @@ class GetPdf extends WebServicesFE
      */
     protected function getResponseClass(): string
     {
-        return GetPdfResponse::class;
+        return $this->roll || $this->addenda ? GetPdfWithParametersResponse::class : GetPdfResponse::class;
     }
 }
