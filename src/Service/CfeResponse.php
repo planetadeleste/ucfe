@@ -45,7 +45,7 @@ class CfeResponse extends Response
      */
     protected function parseResult(): array
     {
-        $arData = get_object_vars($this->obResponse);
+        $arData = $this->obResponse ? get_object_vars($this->obResponse) : [];
         $this->setAttributes($arData);
 
         return $this->toArray();
