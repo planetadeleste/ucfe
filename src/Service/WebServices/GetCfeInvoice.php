@@ -11,6 +11,8 @@ use PlanetaDelEste\Ucfe\WebServicesFE;
  * @property integer $tipoCfe
  * @property string  $serieCfe
  * @property integer $numeroCfe
+ *
+ * @method GetCfeInvoiceResponse send()
  */
 class GetCfeInvoice extends WebServicesFE
 {
@@ -40,6 +42,6 @@ class GetCfeInvoice extends WebServicesFE
 
     protected function getWsdlUrl(): string
     {
-        return 'Query/WebServicesListadosFE.svc?wsdl';
+        return 'Query116/WebServicesFE.svc?wsdl';
     }
 }
