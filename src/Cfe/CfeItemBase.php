@@ -36,7 +36,7 @@ abstract class CfeItemBase
         'MntTotRetenido'       => 'decimal',
         'MntTotal'             => 'decimal',
         'MontoNF'              => 'decimal',
-        'TpoCambio'            => 'decimal',
+        'TpoCambio'            => 'float',
         'FecVenc'              => 'date',
         'FchEmis'              => 'date',
         'TmstFirma'            => 'date',
