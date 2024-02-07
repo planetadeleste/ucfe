@@ -78,4 +78,9 @@ class GetPdf extends WebServicesFE
     {
         return $this->roll || $this->addenda ? GetPdfWithParametersResponse::class : GetPdfResponse::class;
     }
+
+    protected function getWsdlUrl(): string
+    {
+        return 'Query116/WebServicesFE.svc?wsdl';
+    }
 }

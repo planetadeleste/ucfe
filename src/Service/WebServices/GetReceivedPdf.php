@@ -2,25 +2,25 @@
 
 namespace PlanetaDelEste\Ucfe\Service\WebServices;
 
-use PlanetaDelEste\Ucfe\WebServicesFE;
-
 /**
  * @property integer $rut
  * @property integer $rutRecibido
  * @property integer $tipoCfe
  * @property string  $serieCfe
  * @property integer $numeroCfe
+ * @property array   $nombreParametros
+ * @property array   $valoresParametros
  *
  * @method GetReceivedPdfResponse send()
  */
-class GetReceivedPdf extends WebServicesFE
+class GetReceivedPdf extends GetPdf
 {
     /**
      * @inheritDoc
      */
     public function getServiceName(): string
     {
-        return 'ObtenerPdfCfeRecibido';
+        return $this->roll || $this->addenda ? 'ObtenerPdfCfeRecibidoConParametros' : 'ObtenerPdfCfeRecibido';
     }
 
     /**
@@ -28,7 +28,7 @@ class GetReceivedPdf extends WebServicesFE
      */
     protected function getResponseClass(): string
     {
-        return GetReceivedPdfResponse::class;
+        return $this->roll || $this->addenda ? GetReceivedPdfWithParametersResponse::class : GetReceivedPdfResponse::class;
     }
 
     /**
@@ -36,6 +36,13 @@ class GetReceivedPdf extends WebServicesFE
      */
     public function getSortKeys(): array
     {
-        return ['rut', 'rutRecibido', 'tipoCfe', 'serieCfe', 'numeroCfe'];
+        $arKeys = ['rut', 'rutRecibido', 'tipoCfe', 'serieCfe', 'numeroCfe'];
+
+        if ($this->roll || $this->addenda) {
+            $arKeys[] = 'nombreParametros';
+            $arKeys[] = 'valoresParametros';
+        }
+
+        return $arKeys;
     }
 }

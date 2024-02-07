@@ -20,6 +20,6 @@ class GetReceivedImageResponse extends WebServicesFEResponse
      */
     protected function parseResult()
     {
-        return $this->obResponse->base64Binary;
+        return $this->obResponse;
     }
 }
