@@ -221,7 +221,7 @@ trait CfeTrait
         }
 
         // Calculate rounded price
-        $fPriceRounded = round($obTotales->MntTotal);
+        $fPriceRounded = (int)round($obTotales->MntTotal);
 
         // Add final price and rounded difference
         if (!$obTotales->hasAttribute('MntPagar')) {
