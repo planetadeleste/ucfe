@@ -1,13 +1,14 @@
-<?php namespace PlanetaDelEste\Ucfe\Cfe;
+<?php
+
+namespace PlanetaDelEste\Ucfe\Cfe;
 
 use PlanetaDelEste\Ucfe\Cfe\Detalle\Item;
 
 /**
- * @property Item[] $item
+ * @property array<Item> $Item
  */
 class Detalle extends CfeItemBase
 {
-
     /**
      * @inheritDoc
      */
@@ -16,7 +17,7 @@ class Detalle extends CfeItemBase
         return ['Item'];
     }
 
-    public function setItemAttribute(array $sValue = [])
+    public function setItemAttribute(array $sValue = []): void
     {
         $this->setAttributeList($sValue, 'Item', Item::class);
     }

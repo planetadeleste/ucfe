@@ -4,6 +4,7 @@ namespace PlanetaDelEste\Ucfe\Service;
 
 use Illuminate\Support\Arr;
 use PlanetaDelEste\Ucfe\Client;
+use PlanetaDelEste\Ucfe\Service\CfeResponse;
 use Ramsey\Uuid\Uuid;
 use Spatie\ArrayToXml\ArrayToXml;
 
@@ -13,41 +14,50 @@ use Spatie\ArrayToXml\ArrayToXml;
  */
 class CfeClient extends Client
 {
-    const CFE_CREDIT_NOTE = 'nc';
-    const CFE_DEBIT_NOTE = 'nd';
+    public const CFE_CREDIT_NOTE = 'nc';
+    public const CFE_DEBIT_NOTE  = 'nd';
 
     protected int $iTipoMensaje = 820;
 
-    /** @var string Customer email to be used on field EmailEnvioPdfReceptor */
-    protected string $sCustomerEmail;
+    /**
+     * @var string|null Customer email to be used on field EmailEnvioPdfReceptor
+     */
+    protected ?string $sCustomerEmail = null;
 
-    /** @var string Adenda */
-    protected string $sAdenda;
+    /**
+     * @var string|null Adenda
+     */
+    protected ?string $sAdenda = null;
 
     protected bool $bContingency = false;
 
     /**
-     * @return \PlanetaDelEste\Ucfe\Service\CfeResponse
+     * @return CfeResponse
+     *
      * @throws \Exception
      */
     public function signAndSend(): CfeResponse
     {
         $this->iTipoMensaje = 310;
+
         return $this->send();
     }
 
     /**
-     * @return \PlanetaDelEste\Ucfe\Service\CfeResponse
+     * @return CfeResponse
+     *
      * @throws \Exception
      */
     public function cert(): CfeResponse
     {
         $this->iTipoMensaje = 210;
+
         return $this->send();
     }
 
     /**
-     * @return \PlanetaDelEste\Ucfe\Service\CfeResponse
+     * @return CfeResponse
+     *
      * @throws \Exception
      */
     public function send(): CfeResponse
@@ -56,7 +66,7 @@ class CfeClient extends Client
             'CfeXmlOTexto' => $this->xml(),
             'TipoCfe'      => Arr::get($this->getData(), 'Encabezado.IdDoc.TipoCFE'),
             'IdReq'        => 1,
-            'Uuid'         => Uuid::uuid4()->toString()
+            'Uuid'         => Uuid::uuid4()->toString(),
         ];
 
         if ($sCustomerEmail = $this->getCustomerEmail()) {
@@ -73,25 +83,28 @@ class CfeClient extends Client
     public function xml(): string
     {
         $arXmlData = [$this->getType() => $this->getData(true)];
-        $arRoot = [
+        $arRoot    = [
             'rootElementName' => 'CFE',
             '_attributes'     => [
                 'xmlns'     => 'http://cfe.dgi.gub.uy',
                 'version'   => '1.0',
                 'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema',
-                'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance'
-            ]
+                'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
+            ],
         ];
+
         return ArrayToXml::convert($arXmlData, $arRoot, true, 'UTF-8');
     }
 
     /**
-     * @return \PlanetaDelEste\Ucfe\Service\CfeResponse
+     * @return CfeResponse
+     *
      * @throws \Exception
      */
     public function range(): CfeResponse
     {
         $this->iTipoMensaje = 220;
+
         return $this->send();
     }
 
@@ -108,7 +121,7 @@ class CfeClient extends Client
     }
 
     /**
-     * @return null|string
+     * @return string|null
      */
     public function getCustomerEmail(): ?string
     {
@@ -118,6 +131,7 @@ class CfeClient extends Client
     /**
      * Set invoice as contingency. CFE code starts with 2
      * @param bool $bValue
+     *
      * @return $this
      */
     public function setContingency(bool $bValue): self
@@ -126,7 +140,6 @@ class CfeClient extends Client
 
         return $this;
     }
-
 
     /**
      * Get invoice as contingency. CFE code starts with 2
@@ -150,6 +163,24 @@ class CfeClient extends Client
     }
 
     /**
+     * @param string $sValue
+     *
+     * @return $this
+     */
+    public function addAdenda(string $sValue): self
+    {
+        if (str_contains($this->getAdenda(), $sValue)) {
+            return $this;
+        }
+
+        $sPrefix       = $this->getAdenda() ? "\n\r" : '';
+        $sValue        = $sPrefix.trim($sValue);
+        $this->sAdenda = $this->getAdenda() ? $this->getAdenda().$sValue : $sValue;
+
+        return $this;
+    }
+
+    /**
      * @return string|null
      */
     public function getAdenda(): ?string
@@ -165,9 +196,6 @@ class CfeClient extends Client
         return $this->iTipoMensaje;
     }
 
-    /**
-     * @inheritDoc
-     */
     protected function getResponseClass(): string
     {
         return CfeResponse::class;

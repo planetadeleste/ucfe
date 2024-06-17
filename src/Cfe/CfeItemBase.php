@@ -12,7 +12,7 @@ abstract class CfeItemBase
 
     protected array $arRelationList = [];
 
-    protected       $arCast     = [
+    protected $arCast = [
         'CantLinDet'           => 'int',
         'NroLinDet'            => 'int',
         'IndFact'              => 'int',
@@ -38,19 +38,21 @@ abstract class CfeItemBase
         'MontoNF'              => 'decimal',
         'TpoCambio'            => 'float',
         'FecVenc'              => 'date',
+        'FchVenc'              => 'date',
         'FchEmis'              => 'date',
         'TmstFirma'            => 'date',
     ];
+
     protected array $arDateList = ['TmstFirma', 'FchEmis', 'FchVenc'];
 
     public function __construct(array $arData = [])
     {
         $this->setAttributes($arData);
         $this->setRelations();
-//        $this->setDates();
+// $this->setDates();
     }
 
-    protected function setRelations()
+    protected function setRelations(): void
     {
         if (empty($this->arRelationList)) {
             return;
@@ -58,14 +60,16 @@ abstract class CfeItemBase
 
         foreach ($this->arRelationList as $sAttribute => $sClass) {
             $arData = $this->getAttribute($sAttribute, []);
+
             if (empty($arData) || !is_array($arData)) {
                 continue;
             }
 
-            if (\Arr::isAssoc($arData)) {
+            if (Arr::isAssoc($arData)) {
                 $this->setAttribute($sAttribute, new $sClass($arData));
             } else {
                 $arAttributeItem = [];
+
                 foreach ($arData as $arItem) {
                     if (empty($arItem) || !is_array($arItem)) {
                         continue;
@@ -76,25 +80,28 @@ abstract class CfeItemBase
 
                 $this->setAttribute($sAttribute, $arAttributeItem);
             }
-        }
+        }//end foreach
     }
 
-    protected function setDates()
+    protected function setDates(): void
     {
         if (empty($this->arDateList)) {
             return;
         }
 
         foreach ($this->arDateList as $sAttribute) {
-            if (($sValue = $this->getAttribute($sAttribute)) && !empty($sValue)) {
-                $this->setAttribute($sAttribute, Carbon::parse($sValue));
+            if ((!$sValue = $this->getAttribute($sAttribute)) || empty($sValue)) {
+                continue;
             }
+
+            $this->setAttribute($sAttribute, Carbon::parse($sValue));
         }
     }
 
-    protected function setAttributeList(array $arValue, string $sKey, string $sClass)
+    protected function setAttributeList(array $arValue, string $sKey, string $sClass): void
     {
         $arLineList = [];
+
         if (Arr::isAssoc($arValue)) {
             $arLineList[] = new $sClass($arValue);
         } else {
