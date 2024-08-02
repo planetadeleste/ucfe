@@ -8,14 +8,23 @@ use PlanetaDelEste\Ucfe\Cfe\CAEData;
 use PlanetaDelEste\Ucfe\Cfe\Compl_Fiscal;
 use PlanetaDelEste\Ucfe\Cfe\Detalle\Item;
 use PlanetaDelEste\Ucfe\Cfe\DscRcgGlobal;
+use PlanetaDelEste\Ucfe\Cfe\DscRcgGlobal\DRG_Item;
 use PlanetaDelEste\Ucfe\Cfe\Encabezado\Emisor;
 use PlanetaDelEste\Ucfe\Cfe\Encabezado\IdDoc;
 use PlanetaDelEste\Ucfe\Cfe\Encabezado\Receptor;
 use PlanetaDelEste\Ucfe\Cfe\Encabezado\Totales;
 use PlanetaDelEste\Ucfe\Cfe\MediosPago;
+use PlanetaDelEste\Ucfe\Cfe\MediosPago\MedioPago;
 use PlanetaDelEste\Ucfe\Cfe\Referencia;
 use PlanetaDelEste\Ucfe\Cfe\SubTotInfo;
 use PlanetaDelEste\Ucfe\Service\CfeClient;
+use PlanetaDelEste\Ucfe\Service\EBoleta;
+use PlanetaDelEste\Ucfe\Service\EFact;
+use PlanetaDelEste\Ucfe\Service\EFactExp;
+use PlanetaDelEste\Ucfe\Service\ERem;
+use PlanetaDelEste\Ucfe\Service\ERemExp;
+use PlanetaDelEste\Ucfe\Service\EResg;
+use PlanetaDelEste\Ucfe\Service\ETck;
 
 /**
  * @method self addMntIVAOtra(float $fValue, bool $decrease = false, float $fTax = null)
@@ -27,26 +36,31 @@ use PlanetaDelEste\Ucfe\Service\CfeClient;
 trait CfeTrait
 {
     /** @var array Final XML data */
-    protected $arData = [];
+    protected array $arData = [];
+
+    /**
+     * @var bool Force to skip round totals
+     */
+    protected bool $disableRounding = false;
 
     /** @var array */
-    protected $arEncabezado = [
+    protected array $arEncabezado = [
         'IdDoc'    => null,
         'Emisor'   => null,
         'Receptor' => null,
         'Totales'  => null,
     ];
 
-    /** @var array[] */
-    protected $arDetalle = [
+    /** @var array<array> */
+    protected array $arDetalle = [
         'Item' => []
     ];
 
     /** @var array */
-    protected $arExtraData = [];
+    protected array $arExtraData = [];
 
-    /** @var float[] Set totals */
-    protected $arTotals = [
+    /** @var array<float> Set totals */
+    protected array $arTotals = [
         'MntIVAOtra'           => 0,
         'MntIVATasaBasica'     => 0,
         'MntIVATasaMin'        => 0,
@@ -58,14 +72,14 @@ trait CfeTrait
         'MntNoGrv'             => 0,
     ];
 
-    protected $rules = [
+    protected array $rules = [
         'Encabezado.IdDoc'    => 'required',
         'Encabezado.Emisor'   => 'required',
         'Encabezado.Receptor' => 'required',
         'Encabezado.Totales'  => 'required',
     ];
 
-    protected $arSortKeys = [
+    protected array $arSortKeys = [
         'Encabezado',
         'Detalle',
         'SubTotInfo',
@@ -77,22 +91,13 @@ trait CfeTrait
     ];
 
     /** @var string Nota de Crédito|Débito [nc|nb] */
-    protected $noteType = null;
-
-    public function getFinalCFECode(): int
-    {
-        return $this->getContingency() ? $this->getTipoCFE() + 100 : $this->getTipoCFE();
-    }
-
-    public function getRules(): array
-    {
-        return $this->rules;
-    }
+    protected ?string $noteType = null;
 
     /**
      * @param bool $bForce
      *
      * @return array
+     *
      * @throws \ValidationException
      */
     public function getData(bool $bForce = false): array
@@ -106,6 +111,7 @@ trait CfeTrait
 
     /**
      * @return void
+     *
      * @throws \ValidationException
      */
     public function setData(): void
@@ -115,15 +121,16 @@ trait CfeTrait
 
         /** @var IdDoc $obIdDoc */
         $obIdDoc = $this->arEncabezado['IdDoc'];
+
         if ($obIdDoc) {
             $obIdDoc->TipoCFE = $this->getFinalCFECode();
         }
 
         $this->arData['Encabezado'] = Collection::make($this->arEncabezado)
-            ->filter(function ($obVal) {
+            ->filter(static function ($obVal) {
                 return !empty($obVal) && (is_object($obVal) || is_array($obVal));
             })
-            ->map(function ($obVal) {
+            ->map(static function ($obVal) {
                 return is_object($obVal) ? $obVal->toArray() : $obVal;
             })
             ->all();
@@ -135,6 +142,7 @@ trait CfeTrait
                 if (empty($arData)) {
                     continue;
                 }
+
                 $this->arData[$sKey] = $arData;
             }
         }
@@ -142,107 +150,9 @@ trait CfeTrait
         $this->sort();
 
         $obValidator = \Validator::make($this->arData, $this->getRules());
+
         if (!$obValidator->passes()) {
             throw new \ValidationException($obValidator);
-        }
-    }
-
-    public function calculateTotal()
-    {
-        $fTotal = 0;
-
-        /** @var Totales $obTotales */
-        if (!$obTotales = $this->getTotals()) {
-            return $fTotal;
-        }
-
-        // Sum items value
-        foreach ($this->getItems() as $arItem) {
-            if (!isset($arItem['IndFact']) || !in_array((int)$arItem['IndFact'], [1, 16, 10])) {
-                continue;
-            }
-
-            $fTotal += $arItem['MontoItem'];
-        }
-
-        if ($this->arTotals['MntIVATasaMin']) {
-            $fTotal += $this->arTotals['MntNetoIvaTasaMin'] + $this->arTotals['MntIVATasaMin'];
-        }
-
-        if ($this->arTotals['MntIVATasaBasica']) {
-            $fTotal += $this->arTotals['MntNetoIVATasaBasica'] + $this->arTotals['MntIVATasaBasica'];
-        }
-
-        if ($this->arTotals['MntNetoIVAOtra']) {
-            $fTotal += $this->arTotals['MntNetoIVAOtra'] + $this->arTotals['MntIVAOtra'];
-        }
-
-        // Find and apply discounts
-        $arDiscounts = array_get($this->arExtraData, 'DscRcgGlobal.DRG_Item', []);
-        if (!empty($arDiscounts)) {
-            foreach ($arDiscounts as $arDiscountItem) {
-                if ((int)$arDiscountItem['IndFactDR'] !== 1) {
-                    continue;
-                }
-
-                $fValue = (float)$arDiscountItem['ValorDR'];
-                if ($arDiscountItem['TpoMovDR'] === 'D') {
-                    $fTotal -= $fValue;
-                } else {
-                    $fTotal += $fValue;
-                }
-            }
-        }
-
-        /** @var IdDoc $obIdDoc */
-        if (($obIdDoc = $this->arEncabezado['IdDoc']) && $obIdDoc->IndCobPropia) {
-            foreach ($this->getItems() as $arItem) {
-                if (isset($arItem['IndFact']) && (int)$arItem['IndFact'] === 7) {
-                    $fTotal -= $arItem['MontoItem'];
-                } else {
-                    $fTotal += $arItem['MontoItem'];
-                }
-            }
-        }
-
-        return $fTotal;
-    }
-
-    /**
-     * @param bool $force
-     *
-     * @return void
-     */
-    public function setRoundedTotal(bool $force = false): void
-    {
-        /** @var Totales $obTotales */
-        if ((!$obTotales = $this->getTotals()) || !$obTotales->MntTotal) {
-            return;
-        }
-
-        // Calculate rounded price
-        $fPriceRounded = (int)round($obTotales->MntTotal);
-
-        // Add final price and rounded difference
-        if (!$obTotales->hasAttribute('MntPagar')) {
-            $obTotales->MntPagar = $fPriceRounded;
-        }
-
-        if ($force === true || !$obTotales->hasAttribute('MontoNF')) {
-            $obTotales->MontoNF = round($obTotales->MntPagar - $obTotales->MntTotal, 2);
-        }
-
-        // Add Item with round value
-        if ($obTotales->MontoNF) {
-            $obItem = new Item();
-            // Indicador de Facturación (Item_Det_Fact)
-            // 6: Producto o servicio	no facturable
-            // 7: Producto o servicio no facturable negativo
-            $obItem->IndFact = $obTotales->MontoNF > 0 ? 6 : 7;
-            $obItem->NomItem = 'Redondeo';
-            $obItem->Cantidad = 1;
-            $obItem->PrecioUnitario = abs($obTotales->MontoNF);
-            $this->addItem($obItem);
         }
     }
 
@@ -263,12 +173,14 @@ trait CfeTrait
         // Resguardo
         if ($this->getTipoCFE() === 182) {
             $this->setResgTotals($obTotales);
+
             return;
         }
 
         // Factura de Exportación
         if ($this->getTipoCFE() === 121) {
             $this->setExportTotals($obTotales, $fTotal);
+
             return;
         }
 
@@ -277,7 +189,7 @@ trait CfeTrait
 
         // Find items with IndFact = 1|16
         foreach ($this->getItems() as $arItem) {
-            if (!isset($arItem['IndFact']) || !in_array((int)$arItem['IndFact'], [1, 16])) {
+            if (!isset($arItem['IndFact']) || !in_array((int) $arItem['IndFact'], [1, 16])) {
                 continue;
             }
 
@@ -286,13 +198,15 @@ trait CfeTrait
 
         // Apply discounts over MntNoGrv
         $arDiscounts = array_get($this->arExtraData, 'DscRcgGlobal.DRG_Item', []);
+
         if (!empty($arDiscounts)) {
             foreach ($arDiscounts as $arDiscountItem) {
-                if ((int)$arDiscountItem['IndFactDR'] !== 1) {
+                if ((int) $arDiscountItem['IndFactDR'] !== 1) {
                     continue;
                 }
 
-                $fValue = (float)$arDiscountItem['ValorDR'];
+                $fValue = (float) $arDiscountItem['ValorDR'];
+
                 if ($arDiscountItem['TpoMovDR'] === 'D') {
                     $obTotales->MntNoGrv -= $fValue;
                 } else {
@@ -302,26 +216,27 @@ trait CfeTrait
         }
 
         if ($this->arTotals['MntIVATasaMin']) {
-            $obTotales->MntIVATasaMin = $this->arTotals['MntIVATasaMin'];
+            $obTotales->MntIVATasaMin     = $this->arTotals['MntIVATasaMin'];
             $obTotales->MntNetoIvaTasaMin = $this->arTotals['MntNetoIvaTasaMin'];
         }
 
         if ($this->arTotals['MntIVATasaBasica']) {
-            $obTotales->MntIVATasaBasica = $this->arTotals['MntIVATasaBasica'];
+            $obTotales->MntIVATasaBasica     = $this->arTotals['MntIVATasaBasica'];
             $obTotales->MntNetoIVATasaBasica = $this->arTotals['MntNetoIVATasaBasica'];
         }
 
         if ($this->arTotals['MntNetoIVAOtra']) {
-            $obTotales->MntIVAOtra = $this->arTotals['MntIVAOtra'];
+            $obTotales->MntIVAOtra     = $this->arTotals['MntIVAOtra'];
             $obTotales->MntNetoIVAOtra = $this->arTotals['MntNetoIVAOtra'];
         }
 
         /** @var IdDoc $obIdDoc */
         $obIdDoc = $this->arEncabezado['IdDoc'];
+
         if ($obIdDoc->IndCobPropia) {
             $obTotales->MntTotal = 0;
             $obTotales->MntPagar = $fTotal;
-            $obTotales->MontoNF = $fTotal;
+            $obTotales->MontoNF  = $fTotal;
         } else {
             // Add total amount
             if (!$obTotales->hasAttribute('MntTotal')) {
@@ -335,60 +250,7 @@ trait CfeTrait
             }
         }
 
-
         $obTotales->CantLinDet = count($this->arDetalle['Item']);
-    }
-
-    protected function setExportTotals(Totales $obTotales, float $fTotal)
-    {
-        if ($this->getTipoCFE() !== 121) {
-            return;
-        }
-
-        $obTotales->MntTotal = $fTotal;
-        $obTotales->MntPagar = $fTotal;
-        $obTotales->MntExpoyAsim = $fTotal;
-        $obTotales->CantLinDet = count($this->arDetalle['Item']);
-    }
-
-    protected function setResgTotals(Totales $obTotales)
-    {
-        if ($this->getTipoCFE() !== 182) {
-            return;
-        }
-
-        if ($this->arTotals['MntTotRetenido']) {
-            $obTotales->MntTotRetenido = $this->arTotals['MntTotRetenido'];
-            $obTotales->CantLinDet = count($this->getItems());
-        }
-
-        $arRetenc = [];
-        foreach ($this->getItems() as $arItem) {
-            if (!isset($arItem['RetencPercep'])) {
-                continue;
-            }
-
-            foreach ($arItem['RetencPercep'] as $arItemRetenc) {
-                $sCode = $arItemRetenc['CodRet'];
-                $sValue = $arItemRetenc['ValRetPerc'];
-
-                if (isset($arItem['IndFact']) && (int)$arItem['IndFact'] === 9 && $sValue > 0) {
-                    $sValue = PriceHelper::negative($sValue);
-                }
-
-                if (!isset($arRetenc[$sCode])) {
-                    $arRetenc[$sCode] = new Totales\RetencPercep();
-                    $arRetenc[$sCode]->CodRet = $sCode;
-                    $arRetenc[$sCode]->ValRetPerc = $sValue;
-                } else {
-                    $arRetenc[$sCode]->ValRetPerc += $sValue;
-                }
-            }
-        }
-
-        $obTotales->RetencPercep = array_map(function (Totales\RetencPercep $obReten) {
-            return $obReten->toArray();
-        }, array_values($arRetenc));
     }
 
     /**
@@ -402,36 +264,75 @@ trait CfeTrait
     public function removeItem($sVal = 'Redondeo', $sKey = 'NomItem'): void
     {
         foreach ($this->arDetalle['Item'] as $iKey => $arItem) {
-            if (isset($arItem[$sKey]) && $arItem[$sKey] == $sVal) {
-                unset($this->arDetalle['Item'][$iKey]);
+            if (!isset($arItem[$sKey]) || $arItem[$sKey] != $sVal) {
+                continue;
             }
+
+            unset($this->arDetalle['Item'][$iKey]);
         }
     }
 
-    /**
-     * @param \PlanetaDelEste\Ucfe\Cfe\Detalle\Item $obItem
-     *
-     * @return $this
-     */
-    public function addItem(Item $obItem): self
+    public function calculateTotal()
     {
-        $obItem->NroLinDet = count($this->arDetalle['Item']) + 1;
-        $arItem = $obItem->toArray();
+        $fTotal = 0;
 
-        // Resguardo
-        if ($this->getTipoCFE() === 182) {
-            if (isset($arItem['Cantidad'])) {
-                unset($arItem['Cantidad']);
+        /** @var Totales $obTotales */
+        if (!$obTotales = $this->getTotals()) {
+            return $fTotal;
+        }
+
+        // Sum items value
+        foreach ($this->getItems() as $arItem) {
+            if (!isset($arItem['IndFact']) || !in_array((int) $arItem['IndFact'], [1, 16, 10])) {
+                continue;
             }
 
-            if (isset($arItem['UniMed'])) {
-                unset ($arItem['UniMed']);
+            $fTotal += $arItem['MontoItem'];
+        }
+
+        if ($this->arTotals['MntIVATasaMin']) {
+            $fTotal += $this->arTotals['MntNetoIvaTasaMin'] + $this->arTotals['MntIVATasaMin'];
+        }
+
+        if ($this->arTotals['MntIVATasaBasica']) {
+            $fTotal += $this->arTotals['MntNetoIVATasaBasica'] + $this->arTotals['MntIVATasaBasica'];
+        }
+
+        if ($this->arTotals['MntNetoIVAOtra']) {
+            $fTotal += $this->arTotals['MntNetoIVAOtra'] + $this->arTotals['MntIVAOtra'];
+        }
+
+        // Find and apply discounts
+        $arDiscounts = array_get($this->arExtraData, 'DscRcgGlobal.DRG_Item', []);
+
+        if (!empty($arDiscounts)) {
+            foreach ($arDiscounts as $arDiscountItem) {
+                if ((int) $arDiscountItem['IndFactDR'] !== 1) {
+                    continue;
+                }
+
+                $fValue = (float) $arDiscountItem['ValorDR'];
+
+                if ($arDiscountItem['TpoMovDR'] === 'D') {
+                    $fTotal -= $fValue;
+                } else {
+                    $fTotal += $fValue;
+                }
             }
         }
 
-        $this->arDetalle['Item'][] = $arItem;
+        /** @var IdDoc $obIdDoc */
+        if (($obIdDoc = $this->arEncabezado['IdDoc']) && $obIdDoc->IndCobPropia) {
+            foreach ($this->getItems() as $arItem) {
+                if (isset($arItem['IndFact']) && (int) $arItem['IndFact'] === 7) {
+                    $fTotal -= $arItem['MontoItem'];
+                } else {
+                    $fTotal += $arItem['MontoItem'];
+                }
+            }
+        }
 
-        return $this;
+        return $fTotal;
     }
 
     /**
@@ -441,70 +342,6 @@ trait CfeTrait
     {
         return $this->arDetalle['Item'];
     }
-
-    /**
-     * @param string $sName
-     * @param array  $arguments
-     *
-     * @return self
-     * @throws \Exception
-     */
-    public function __call(string $sName, array $arguments)
-    {
-        if (substr($sName, 0, 3) == 'add' && !empty($arguments)) {
-            $sMntKey = substr($sName, 3);
-            if (array_keys($this->arTotals, $sMntKey)) {
-                $decrease = isset($arguments[1]) && (bool)$arguments[1];
-                $fTax = isset($arguments[2]) ? (float)$arguments[2] : null;
-                return $this->addAmount($arguments[0], $sMntKey, $decrease, $fTax);
-            }
-        }
-
-        throw new \Exception('Method '.$sName.' does not exits');
-    }
-
-    public function addAmount(
-        float  $fValue,
-        string $sMntKey = 'MntIVATasaBasica',
-        bool   $decrease = false,
-        float  $fTax = null
-    ): self {
-        $obTotals = $this->getTotals();
-        $sMntNetoKey = 'MntNeto'.substr($sMntKey, 3);
-
-        if ($sMntKey === 'MntIVATasaBasica' && $obTotals) {
-            $fTax = (float)$obTotals->IVATasaBasica;
-        } elseif ($sMntKey === 'MntIVATasaMin' && $obTotals) {
-            $fTax = (float)$obTotals->IVATasaMin;
-            $sMntNetoKey = 'MntNetoIvaTasaMin';
-        }
-
-        if (isset($fTax) && array_key_exists($sMntNetoKey, $this->arTotals)) {
-            $fMntValue = round($fValue, 2);
-
-            if ($decrease) {
-                $this->arTotals[$sMntNetoKey] -= $fMntValue;
-            } else {
-                $this->arTotals[$sMntNetoKey] += $fMntValue;
-            }
-            $fValue = round($fValue * ($fTax / 100), 2);
-        }
-
-        if ($decrease) {
-            $this->arTotals[$sMntKey] -= $fValue;
-        } else {
-            $this->arTotals[$sMntKey] += $fValue;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get CFE definition type
-     *
-     * @return string eTck|eFact|eFact_Exp|eRem|eRem_Exp|eResg|eBoleta
-     */
-    abstract public function getType(): string;
 
     /**
      * CFE type
@@ -534,22 +371,253 @@ trait CfeTrait
      */
     abstract public function getTipoCFE(): int;
 
-    public function idDoc(): IdDoc
+    protected function setResgTotals(Totales $obTotales): void
     {
-        $obIdDoc = new IdDoc();
-        $obIdDoc->TipoCFE = $this->getFinalCFECode();
-        return $this->arEncabezado['IdDoc'] = $obIdDoc;
+        if ($this->getTipoCFE() !== 182) {
+            return;
+        }
+
+        if ($this->arTotals['MntTotRetenido']) {
+            $obTotales->MntTotRetenido = $this->arTotals['MntTotRetenido'];
+            $obTotales->CantLinDet     = count($this->getItems());
+        }
+
+        $arRetenc = [];
+
+        foreach ($this->getItems() as $arItem) {
+            if (!isset($arItem['RetencPercep'])) {
+                continue;
+            }
+
+            foreach ($arItem['RetencPercep'] as $arItemRetenc) {
+                $sCode  = $arItemRetenc['CodRet'];
+                $sValue = $arItemRetenc['ValRetPerc'];
+
+                if (isset($arItem['IndFact']) && (int) $arItem['IndFact'] === 9 && $sValue > 0) {
+                    $sValue = PriceHelper::negative($sValue);
+                }
+
+                if (!isset($arRetenc[$sCode])) {
+                    $arRetenc[$sCode]             = new Totales\RetencPercep();
+                    $arRetenc[$sCode]->CodRet     = $sCode;
+                    $arRetenc[$sCode]->ValRetPerc = $sValue;
+                } else {
+                    $arRetenc[$sCode]->ValRetPerc += $sValue;
+                }
+            }
+        }
+
+        $obTotales->RetencPercep = array_map(static function (Totales\RetencPercep $obReten) {
+            return $obReten->toArray();
+        }, array_values($arRetenc));
     }
 
+    protected function setExportTotals(Totales $obTotales, float $fTotal): void
+    {
+        if ($this->getTipoCFE() !== 121) {
+            return;
+        }
+
+        $obTotales->MntTotal     = $fTotal;
+        $obTotales->MntPagar     = $fTotal;
+        $obTotales->MntExpoyAsim = $fTotal;
+        $obTotales->CantLinDet   = count($this->arDetalle['Item']);
+    }
+
+    /**
+     * @param bool $force
+     *
+     * @return void
+     */
+    public function setRoundedTotal(bool $force = false): void
+    {
+        /** @var Totales $obTotales */
+        if ((!$obTotales = $this->getTotals()) || !$obTotales->MntTotal) {
+            return;
+        }
+
+        // Calculate rounded price
+        $fPriceRounded = $this->isDisableRounding() ? $obTotales->MntTotal : (int) round($obTotales->MntTotal);
+
+        // Add final price and rounded difference
+        if (!$obTotales->hasAttribute('MntPagar')) {
+            $obTotales->MntPagar = $fPriceRounded;
+        }
+
+        if ($this->isDisableRounding()) {
+            return;
+        }
+
+        if ($force || !$obTotales->hasAttribute('MontoNF')) {
+            $obTotales->MontoNF = round($obTotales->MntPagar - $obTotales->MntTotal, 2);
+        }
+
+        // Add Item with round value
+        if (!$obTotales->MontoNF) {
+            return;
+        }
+
+        $obItem = new Item();
+        // Indicador de Facturación (Item_Det_Fact)
+        // 6: Producto o servicio   no facturable
+        // 7: Producto o servicio no facturable negativo
+        $obItem->IndFact        = $obTotales->MontoNF > 0 ? 6 : 7;
+        $obItem->NomItem        = 'Redondeo';
+        $obItem->Cantidad       = 1;
+        $obItem->PrecioUnitario = abs($obTotales->MontoNF);
+        $this->addItem($obItem);
+    }
+
+    /**
+     * @param Item $obItem
+     *
+     * @return $this
+     */
+    public function addItem(Item $obItem): self
+    {
+        $obItem->NroLinDet = count($this->arDetalle['Item']) + 1;
+        $arItem            = $obItem->toArray();
+
+        // Resguardo
+        if ($this->getTipoCFE() === 182) {
+            if (isset($arItem['Cantidad'])) {
+                unset($arItem['Cantidad']);
+            }
+
+            if (isset($arItem['UniMed'])) {
+                unset($arItem['UniMed']);
+            }
+        }
+
+        $this->arDetalle['Item'][] = $arItem;
+
+        return $this;
+    }
+
+    public function getFinalCFECode(): int
+    {
+        return $this->getContingency() ? $this->getTipoCFE() + 100 : $this->getTipoCFE();
+    }
+
+    /**
+     * @return void
+     */
+    protected function sort(): void
+    {
+        $arData = $this->arData;
+        $arKeys = array_flip($this->arSortKeys);
+        $result = array_replace($arKeys, $arData);
+
+        $this->arData = array_intersect_key($result, $arData);
+    }
+
+    public function getRules(): array
+    {
+        return $this->rules;
+    }
+
+    /**
+     * @param string $sName
+     * @param array  $arguments
+     *
+     * @return self
+     *
+     * @throws \Exception
+     */
+    public function __call(string $sName, array $arguments): self
+    {
+        if (substr($sName, 0, 3) == 'add' && !empty($arguments)) {
+            $sMntKey = substr($sName, 3);
+
+            if (array_keys($this->arTotals, $sMntKey)) {
+                $decrease = isset($arguments[1]) && (bool) $arguments[1];
+                $fTax     = isset($arguments[2]) ? (float) $arguments[2] : null;
+
+                return $this->addAmount($arguments[0], $sMntKey, $decrease, $fTax);
+            }
+        }
+
+        throw new \Exception('Method '.$sName.' does not exits');
+    }
+
+    /**
+     * @param float      $fValue
+     * @param string     $sMntKey
+     * @param bool       $decrease
+     * @param float|null $fTax
+     *
+     * @return ETck|EBoleta|EFact|EFactExp|ERem|ERemExp|EResg|CfeTrait
+     */
+    public function addAmount(
+        float $fValue,
+        string $sMntKey = 'MntIVATasaBasica',
+        bool $decrease = false,
+        ?float $fTax = null
+    ): self {
+        $obTotals    = $this->getTotals();
+        $sMntNetoKey = 'MntNeto'.substr($sMntKey, 3);
+
+        if ('MntIVATasaBasica' === $sMntKey && $obTotals) {
+            $fTax = (float) $obTotals->IVATasaBasica;
+        } elseif ('MntIVATasaMin' === $sMntKey && $obTotals) {
+            $fTax        = (float) $obTotals->IVATasaMin;
+            $sMntNetoKey = 'MntNetoIvaTasaMin';
+        }
+
+        if (isset($fTax) && array_key_exists($sMntNetoKey, $this->arTotals)) {
+            $fMntValue = round($fValue, 2);
+
+            if ($decrease) {
+                $this->arTotals[$sMntNetoKey] -= $fMntValue;
+            } else {
+                $this->arTotals[$sMntNetoKey] += $fMntValue;
+            }
+
+            $fValue = round($fValue * ($fTax / 100), 2);
+        }
+
+        if ($decrease) {
+            $this->arTotals[$sMntKey] -= $fValue;
+        } else {
+            $this->arTotals[$sMntKey] += $fValue;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get CFE definition type
+     *
+     * @return string eTck|eFact|eFact_Exp|eRem|eRem_Exp|eResg|eBoleta
+     */
+    abstract public function getType(): string;
+
+    /**
+     * @return IdDoc
+     */
+    public function idDoc(): IdDoc
+    {
+        $obIdDoc                     = new IdDoc();
+        $obIdDoc->TipoCFE            = $this->getFinalCFECode();
+        $this->arEncabezado['IdDoc'] = $obIdDoc;
+
+        return $this->arEncabezado['IdDoc'];
+    }
+
+    /**
+     * @return Emisor
+     */
     public function emisor(): Emisor
     {
-        return $this->arEncabezado['Emisor'] = new Emisor();
+        $this->arEncabezado['Emisor'] = new Emisor();
+
+        return $this->arEncabezado['Emisor'];
     }
 
     /**
      * Set Emisor object
      *
-     * @param \PlanetaDelEste\Ucfe\Cfe\Encabezado\Emisor $obEmisor
+     * @param Emisor $obEmisor
      *
      * @return $this
      */
@@ -560,15 +628,20 @@ trait CfeTrait
         return $this;
     }
 
+    /**
+     * @return Receptor
+     */
     public function receptor(): Receptor
     {
-        return $this->arEncabezado['Receptor'] = new Receptor();
+        $this->arEncabezado['Receptor'] = new Receptor();
+
+        return $this->arEncabezado['Receptor'];
     }
 
     /**
      * Set Receptor object
      *
-     * @param \PlanetaDelEste\Ucfe\Cfe\Encabezado\Receptor $obReceptor
+     * @param Receptor $obReceptor
      *
      * @return $this
      */
@@ -579,13 +652,18 @@ trait CfeTrait
         return $this;
     }
 
+    /**
+     * @return Totales
+     */
     public function totales(): Totales
     {
-        return $this->arEncabezado['Totales'] = new Totales();
+        $this->arEncabezado['Totales'] = new Totales();
+
+        return $this->arEncabezado['Totales'];
     }
 
     /**
-     * @param \PlanetaDelEste\Ucfe\Cfe\SubTotInfo $obSubTotInfo
+     * @param SubTotInfo $obSubTotInfo
      *
      * @return $this
      */
@@ -597,7 +675,7 @@ trait CfeTrait
     }
 
     /**
-     * @param \PlanetaDelEste\Ucfe\Cfe\DscRcgGlobal $obDscRcgGlobal
+     * @param DscRcgGlobal $obDscRcgGlobal
      *
      * @return $this
      */
@@ -611,33 +689,34 @@ trait CfeTrait
     /**
      * Add new discount
      *
-     * @param \PlanetaDelEste\Ucfe\Cfe\DscRcgGlobal\DRG_Item $obItem
+     * @param DRG_Item $obItem
      *
      * @return $this
      */
-    public function addGlobalDiscount(DscRcgGlobal\DRG_Item $obItem): self
+    public function addGlobalDiscount(DRG_Item $obItem): self
     {
         if (!isset($this->arExtraData['DscRcgGlobal'])) {
             $this->arExtraData['DscRcgGlobal'] = ['DRG_Item' => []];
         }
 
         $sMntKey = 'MntIVAOtra';
-        if ($obItem->IndFactDR == '3') {
+
+        if ('3' === $obItem->IndFactDR) {
             $sMntKey = 'MntIVATasaBasica';
-        } elseif ($obItem->IndFactDR == '2') {
+        } elseif ('2' === $obItem->IndFactDR) {
             $sMntKey = 'MntIVATasaMin';
         }
 
         $this->addAmount($obItem->ValorDR, $sMntKey, $obItem->TpoMovDR === 'D');
 
-        $obItem->NroLinDR = count($this->arExtraData['DscRcgGlobal']['DRG_Item']) + 1;
+        $obItem->NroLinDR                                = count($this->arExtraData['DscRcgGlobal']['DRG_Item']) + 1;
         $this->arExtraData['DscRcgGlobal']['DRG_Item'][] = $obItem->toArray();
 
         return $this;
     }
 
     /**
-     * @param \PlanetaDelEste\Ucfe\Cfe\MediosPago $obMediosPago
+     * @param MediosPago $obMediosPago
      *
      * @return $this
      */
@@ -649,17 +728,18 @@ trait CfeTrait
     }
 
     /**
-     * @param \PlanetaDelEste\Ucfe\Cfe\MediosPago\MedioPago $obMedioPago
+     * @param MedioPago $obMedioPago
      *
      * @return $this
      */
-    public function addMedioPago(MediosPago\MedioPago $obMedioPago): self
+    public function addMedioPago(MedioPago $obMedioPago): self
     {
         if (!isset($this->arExtraData['MediosPago'])) {
             $this->arExtraData['MediosPago'] = ['MedioPago' => []];
         }
-        $obMedioPago->NroLinMP = count($this->arExtraData['MediosPago']['MedioPago']) + 1;
-        $arMedioPago = $obMedioPago->toArray();
+
+        $obMedioPago->NroLinMP                          = count($this->arExtraData['MediosPago']['MedioPago']) + 1;
+        $arMedioPago                                    = $obMedioPago->toArray();
         $this->arExtraData['MediosPago']['MedioPago'][] = $arMedioPago;
 
         return $this;
@@ -676,14 +756,14 @@ trait CfeTrait
             $this->arExtraData['Referencia'] = ['Referencia' => []];
         }
 
-        $obReferencia->NroLinRef = count($this->arExtraData['Referencia']['Referencia']) + 1;
+        $obReferencia->NroLinRef                         = count($this->arExtraData['Referencia']['Referencia']) + 1;
         $this->arExtraData['Referencia']['Referencia'][] = $obReferencia->toArray();
 
         return $this;
     }
 
     /**
-     * @param \PlanetaDelEste\Ucfe\Cfe\CAEData $obCAEData
+     * @param CAEData $obCAEData
      *
      * @return $this
      */
@@ -695,7 +775,7 @@ trait CfeTrait
     }
 
     /**
-     * @param \PlanetaDelEste\Ucfe\Cfe\Compl_Fiscal $obComplFiscal
+     * @param Compl_Fiscal $obComplFiscal
      *
      * @return $this
      */
@@ -726,12 +806,21 @@ trait CfeTrait
         return $this;
     }
 
-    protected function sort(): void
+    /**
+     * @return bool
+     */
+    public function isDisableRounding(): bool
     {
-        $arData = $this->arData;
-        $arKeys = array_flip($this->arSortKeys);
-        $result = array_replace($arKeys, $arData);
+        return $this->disableRounding;
+    }
 
-        $this->arData = array_intersect_key($result, $arData);
+    /**
+     * @param bool $disableRounding
+     *
+     * @return void
+     */
+    public function setDisableRounding(bool $disableRounding): void
+    {
+        $this->disableRounding = $disableRounding;
     }
 }
