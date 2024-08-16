@@ -48,6 +48,18 @@ class CfeClient extends Client
      *
      * @throws \Exception
      */
+    public function validate(): CfeResponse
+    {
+        $this->iTipoMensaje = 350;
+
+        return $this->send();
+    }
+
+    /**
+     * @return CfeResponse
+     *
+     * @throws \Exception
+     */
     public function cert(): CfeResponse
     {
         $this->iTipoMensaje = 210;
