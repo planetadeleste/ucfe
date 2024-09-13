@@ -4,6 +4,7 @@ namespace PlanetaDelEste\Ucfe;
 
 use Illuminate\Support\Arr;
 use PlanetaDelEste\Ucfe\Result\Base;
+use PlanetaDelEste\Ucfe\Service\Invoke;
 use SoapClient;
 
 abstract class Client
@@ -168,9 +169,11 @@ abstract class Client
         );
         $sSoapClass = $this->getSoapClass();
         $sUrl       = sprintf('https://%s.ucfe.com.uy/', Auth::getUrl());
+
         if ($this->inbox) {
-            $sUrl .= 'Inbox/';
+            $sUrl .= $this->getInbox() . '/';
         }
+
         $sUrl .= $this->getWsdlUrl();
 
         $this->url    = $sUrl;
@@ -187,6 +190,14 @@ abstract class Client
     public function getSoapClass(): string
     {
         return SoapClient::class;
+    }
+
+    /**
+     * @return string
+     */
+    public function getInbox(): string
+    {
+        return 'Inbox';
     }
 
     /**

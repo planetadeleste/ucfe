@@ -3,14 +3,16 @@
 namespace PlanetaDelEste\Ucfe\Service;
 
 use Carbon\Carbon;
+use PlanetaDelEste\Ucfe\Service\BaseRequest;
 
 /**
  * @method string|null date(string $sValue = null)
+ * @method StatusResponse send()
  */
-class StatusReportRequest extends BaseRequest
+class EcoRequest extends BaseRequest
 {
     /**
-     * @var array<string>
+     * @var array|string[]
      */
     protected array $arKeys = ['date'];
 
@@ -22,10 +24,8 @@ class StatusReportRequest extends BaseRequest
         $obDate = Carbon::parse($this->date());
 
         return [
-            'IdReq'           => 1,
-            'FechaReq'        => $obDate->format('Ymd'),
-            'HoraReq'         => $obDate->format('His'),
-            'EstadoSituacion' => '00000000',
+            'FechaReq' => $obDate->format('Ymd'),
+            'HoraReq'  => $obDate->format('His'),
         ];
     }
 
@@ -34,6 +34,14 @@ class StatusReportRequest extends BaseRequest
      */
     protected function getTipoMensaje()
     {
-        return 800;
+        return 820;
+    }
+
+    /**
+     * @return string
+     */
+    protected function getResponseClass(): string
+    {
+        return StatusResponse::class;
     }
 }

@@ -4,37 +4,55 @@ namespace PlanetaDelEste\Ucfe;
 
 class Auth
 {
-    /** @var string */
-    protected static $sUsername;
+    /**
+     * @var string
+     */
+    protected static string $sUsername;
 
-    /** @var string */
-    protected static $sPassword;
+    /**
+     * @var string
+     */
+    protected static string $sPassword;
 
-    /** @var string */
-    protected static $sCodComercio;
+    /**
+     * @var string
+     */
+    protected static string $sCodComercio;
 
-    /** @var string */
-    protected static $sCodTerminal;
+    /**
+     * @var string
+     */
+    protected static string $sCodTerminal;
 
-    /** @var string */
-    protected static $sUrl;
+    /**
+     * @var string
+     */
+    protected static string $sUrl;
 
     /**
      * Set all credentials
      *
-     * @param string $sUsername
-     * @param string $sPassword
-     * @param string $sCodComercio
-     * @param string $sCodTerminal
-     * @param string $sUrl
+     * @param string | array $sUsername
+     * @param string | null  $sPassword
+     * @param string | null  $sCodComercio
+     * @param string | null  $sCodTerminal
+     * @param string | null  $sUrl
      */
     public static function credentials(
-        string $sUsername,
-        string $sPassword,
-        string $sCodComercio,
-        string $sCodTerminal,
-        string $sUrl
+        $sUsername,
+        ?string $sPassword = null,
+        ?string $sCodComercio = null,
+        ?string $sCodTerminal = null,
+        ?string $sUrl = null
     ): void {
+        if (is_array($sUsername)) {
+            $sPassword    = $sUsername[1];
+            $sCodComercio = $sUsername[2];
+            $sCodTerminal = $sUsername[3];
+            $sUrl         = $sUsername[4];
+            $sUsername    = $sUsername[0];
+        }
+
         self::setUser($sUsername);
         self::setPassword($sPassword);
         self::setCodComercio($sCodComercio);

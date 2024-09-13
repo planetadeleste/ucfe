@@ -7,19 +7,23 @@ use PlanetaDelEste\Ucfe\Client;
 
 abstract class BaseRequest extends Client
 {
+    /**
+     * @var array
+     */
     protected array $arData = [];
-    protected array $arKeys = [];
-
 
     /**
-     * @inheritDoc
+     * @var array
      */
-    protected function getResponseClass(): string
-    {
-        return BaseResponse::class;
-    }
+    protected array $arKeys = [];
 
-    public function __call($name, $arguments = [])
+    /**
+     * @param string $name
+     * @param mixed  $arguments
+     *
+     * @return mixed|null
+     */
+    public function __call(string $name, $arguments = [])
     {
         if (!in_array($name, $this->arKeys)) {
             return null;
@@ -27,7 +31,7 @@ abstract class BaseRequest extends Client
 
         $sValue = is_array($arguments) && !empty($arguments) ? $arguments[0] : $arguments;
 
-        if (!is_null($sValue) && (!empty($sValue) || is_bool($sValue) || is_numeric($sValue))) {
+        if ((!empty($sValue) || is_bool($sValue) || is_numeric($sValue))) {
             array_set($this->arData, $name, $sValue);
         }
 
@@ -36,6 +40,7 @@ abstract class BaseRequest extends Client
 
     /**
      * @return mixed
+     *
      * @throws Exception
      */
     public function send()
@@ -47,4 +52,12 @@ abstract class BaseRequest extends Client
      * @return array
      */
     abstract protected function getSendData(): array;
+
+    /**
+     * @return string
+     */
+    protected function getResponseClass(): string
+    {
+        return BaseResponse::class;
+    }
 }

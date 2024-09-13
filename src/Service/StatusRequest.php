@@ -15,6 +15,9 @@ use Spatie\ArrayToXml\ArrayToXml;
  */
 class StatusRequest extends BaseRequest
 {
+    /**
+     * @var array|string[]
+     */
     protected array $arKeys = ['uuid', 'type', 'serie', 'number', 'rut', 'xml'];
 
     /**
@@ -25,6 +28,9 @@ class StatusRequest extends BaseRequest
         return 360;
     }
 
+    /**
+     * @return string
+     */
     protected function getResponseClass(): string
     {
         return StatusResponse::class;
@@ -32,6 +38,7 @@ class StatusRequest extends BaseRequest
 
     /**
      * @return array
+     *
      * @throws \DOMException
      */
     protected function getSendData(): array
