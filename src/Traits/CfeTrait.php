@@ -32,6 +32,7 @@ use PlanetaDelEste\Ucfe\Service\ETck;
  * @method self addMntIVATasaMin(float $fValue, bool $decrease = false, float $fTax = null)
  * @method self addMntIVAenSusp(float $fValue, bool $decrease = false, float $fTax = null)
  * @method self addMntTotRetenido(float $fValue, bool $decrease = false, float $fTax = null)
+ * @method self addMntTotCredFisc(float $fValue, bool $decrease = false, float $fTax = null)
  */
 trait CfeTrait
 {
@@ -69,6 +70,7 @@ trait CfeTrait
         'MntNetoIVATasaBasica' => 0,
         'MntNetoIvaTasaMin'    => 0,
         'MntTotRetenido'       => 0,
+        'MntTotCredFisc'       => 0,
         'MntNoGrv'             => 0,
     ];
 
@@ -261,10 +263,16 @@ trait CfeTrait
         return $this->arEncabezado['Totales'];
     }
 
-    public function removeItem($sVal = 'Redondeo', $sKey = 'NomItem'): void
+    /**
+     * @param string $sVal
+     * @param string $sKey
+     *
+     * @return void
+     */
+    public function removeItem(string $sVal = 'Redondeo', string $sKey = 'NomItem'): void
     {
         foreach ($this->arDetalle['Item'] as $iKey => $arItem) {
-            if (!isset($arItem[$sKey]) || $arItem[$sKey] != $sVal) {
+            if (!isset($arItem[$sKey]) || $arItem[$sKey] !== $sVal) {
                 continue;
             }
 
@@ -272,12 +280,14 @@ trait CfeTrait
         }
     }
 
+    /**
+     * @return float|int|mixed
+     */
     public function calculateTotal()
     {
         $fTotal = 0;
 
-        /** @var Totales $obTotales */
-        if (!$obTotales = $this->getTotals()) {
+        if (!$this->getTotals()) {
             return $fTotal;
         }
 
@@ -379,10 +389,14 @@ trait CfeTrait
 
         if ($this->arTotals['MntTotRetenido']) {
             $obTotales->MntTotRetenido = $this->arTotals['MntTotRetenido'];
-            $obTotales->CantLinDet     = count($this->getItems());
         }
 
-        $arRetenc = [];
+        if ($this->arTotals['MntTotCredFisc']) {
+            $obTotales->MntTotCredFisc = $this->arTotals['MntTotCredFisc'];
+        }
+
+        $obTotales->CantLinDet = count($this->getItems());
+        $arRetenc              = [];
 
         foreach ($this->getItems() as $arItem) {
             if (!isset($arItem['RetencPercep'])) {
@@ -412,6 +426,12 @@ trait CfeTrait
         }, array_values($arRetenc));
     }
 
+    /**
+     * @param Totales $obTotales
+     * @param float   $fTotal
+     *
+     * @return void
+     */
     protected function setExportTotals(Totales $obTotales, float $fTotal): void
     {
         if ($this->getTipoCFE() !== 121) {
@@ -431,7 +451,6 @@ trait CfeTrait
      */
     public function setRoundedTotal(bool $force = false): void
     {
-        /** @var Totales $obTotales */
         if ((!$obTotales = $this->getTotals()) || !$obTotales->MntTotal) {
             return;
         }
@@ -494,6 +513,9 @@ trait CfeTrait
         return $this;
     }
 
+    /**
+     * @return int
+     */
     public function getFinalCFECode(): int
     {
         return $this->getContingency() ? $this->getTipoCFE() + 100 : $this->getTipoCFE();
@@ -511,6 +533,9 @@ trait CfeTrait
         $this->arData = array_intersect_key($result, $arData);
     }
 
+    /**
+     * @return array
+     */
     public function getRules(): array
     {
         return $this->rules;
@@ -526,7 +551,7 @@ trait CfeTrait
      */
     public function __call(string $sName, array $arguments): self
     {
-        if (substr($sName, 0, 3) == 'add' && !empty($arguments)) {
+        if (substr($sName, 0, 3) === 'add' && !empty($arguments)) {
             $sMntKey = substr($sName, 3);
 
             if (array_keys($this->arTotals, $sMntKey)) {
@@ -537,7 +562,7 @@ trait CfeTrait
             }
         }
 
-        throw new \Exception('Method '.$sName.' does not exits');
+        throw new \Exception("Method {$sName} does not exits");
     }
 
     /**
