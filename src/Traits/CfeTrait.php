@@ -180,7 +180,7 @@ trait CfeTrait
         }
 
         // Factura de Exportación
-        if ($this->getTipoCFE() === 121) {
+        if (in_array($this->getTipoCFE(), [121, 122, 123])) {
             $this->setExportTotals($obTotales, $fTotal);
 
             return;
@@ -446,7 +446,7 @@ trait CfeTrait
      */
     protected function setExportTotals(Totales $obTotales, float $fTotal): void
     {
-        if ($this->getTipoCFE() !== 121) {
+        if (!in_array($this->getTipoCFE(), [121, 122, 123])) {
             return;
         }
 
