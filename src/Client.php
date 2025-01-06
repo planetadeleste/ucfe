@@ -4,63 +4,70 @@ namespace PlanetaDelEste\Ucfe;
 
 use Illuminate\Support\Arr;
 use PlanetaDelEste\Ucfe\Result\Base;
-use PlanetaDelEste\Ucfe\Service\Invoke;
 use SoapClient;
 
 abstract class Client
 {
-    /** @var SoapClient */
+    /**
+     * @var SoapClient
+     */
     protected $client;
 
-    /** @var bool Add "Inbox" part to ws url */
+    /**
+     * @var bool Add "Inbox" part to ws url
+     */
     protected bool $inbox = true;
 
-    /** @var \PlanetaDelEste\Ucfe\WsseAuthHeader */
+    /**
+     * @var WsseAuthHeader
+     */
     protected $auth;
 
     protected string $url = '';
 
     public static function __callStatic(string $name, array $arArgs = [])
     {
-        if (method_exists(get_called_class(), $name)) {
+        if (method_exists(static::class, $name)) {
             return call_user_func_array([new static(), $name], $arArgs);
         }
     }
 
     /**
-     * @param array $arParams   = [
-     *                          'req' => [
-     *                          'Req' => [
-     *                          'Adenda' => '',
-     *                          'Certificado' => '',
-     *                          'CfeXmlOTexto' => '',
-     *                          'CifrarComplementoFiscal' => '',
-     *                          'CodComercio' => '',
-     *                          'CodRta' => '',
-     *                          'CodTerminal' => '',
-     *                          'DatosQr' => '',
-     *                          'EmailEnvioPdfReceptor' => '',
-     *                          'EstadoSituacion' => '',
-     *                          'FechaReq' => '',
-     *                          'HoraReq' => '',
-     *                          'IdReq' => '',
-     *                          'Impresora' => '',
-     *                          'NumeroCfe' => '',
-     *                          'RechCom' => '',
-     *                          'RutEmisor' => '',
-     *                          'Serie' => '',
-     *                          'TipoCfe' => '',
-     *                          'TipoMensaje' => '',
-     *                          'Uuid' => '',
-     *                          ],
-     *                          'RequestDate' => '',
-     *                          'Tout' => '3000',
-     *                          'ReqEnc' => '',
-     *                          'CodComercio' => '',
-     *                          'CodTerminal' => '',
-     *                          ]]
+     * @param array $arParams array{
+     *                        req: {
+     *                        Req: {
+     *                        Adenda: '',
+     *                        Certificado: '',
+     *                        CfeXmlOTexto: '',
+     *                        CifrarComplementoFiscal: '',
+     *                        CodComercio: '',
+     *                        CodRta: '',
+     *                        CodTerminal: '',
+     *                        DatosQr: '',
+     *                        EmailEnvioPdfReceptor: '',
+     *                        EstadoSituacion: '',
+     *                        FechaReq: '',
+     *                        HoraReq: '',
+     *                        IdReq: '',
+     *                        Impresora: '',
+     *                        NumeroCfe: '',
+     *                        RechCom: '',
+     *                        RutEmisor: '',
+     *                        Serie: '',
+     *                        TipoCfe: '',
+     *                        TipoMensaje: '',
+     *                        Uuid: '',
+     *                        },
+     *                        RequestDate:  '',
+     *                        Tout:  '3000',
+     *                        ReqEnc:  '',
+     *                        CodComercio:  '',
+     *                        CodTerminal:  '',
+     *                        }
+     *                        }
      *
      * @return mixed
+     *
      * @throws \Exception
      */
     public function exec(array $arParams = [])
@@ -123,6 +130,7 @@ abstract class Client
 
     /**
      * @return bool
+     *
      * @throws \Exception
      */
     protected function validateAuth(): bool
@@ -151,19 +159,34 @@ abstract class Client
     }
 
     /**
+     * @return mixed
+     */
+    abstract protected function getTipoMensaje();
+
+    /**
      * @param array $arOptions
      *
      * @return SoapClient
+     *
      * @throws \Exception
      */
     protected function soap(array $arOptions = []): SoapClient
     {
         $arOptions  = array_merge(
             [
-                'trace'       => true,
-                'cache_wsdl'  => WSDL_CACHE_BOTH,
-                'compression' => SOAP_COMPRESSION_ACCEPT | SOAP_COMPRESSION_GZIP,
-                'user_agent'  => 'Apache-HttpClient/4.5.5 (Java/16.0.1)'
+                'trace'          => true,
+                'cache_wsdl'     => WSDL_CACHE_BOTH,
+                'keep_alive'     => false,
+                'compression'    => SOAP_COMPRESSION_ACCEPT | SOAP_COMPRESSION_GZIP,
+                'user_agent'     => 'Apache-HttpClient/4.5.5 (Java/16.0.1)',
+                'stream_context' => stream_context_create([
+                    'ssl' => [
+                        'ciphers'           => 'AES256-SHA',
+                        'verify_peer'       => false,
+                        'verify_peer_name'  => false,
+                        'allow_self_signed' => true
+                    ]
+                ])
             ],
             $arOptions
         );
@@ -171,7 +194,7 @@ abstract class Client
         $sUrl       = sprintf('https://%s.ucfe.com.uy/', Auth::getUrl());
 
         if ($this->inbox) {
-            $sUrl .= $this->getInbox() . '/';
+            $sUrl .= $this->getInbox().'/';
         }
 
         $sUrl .= $this->getWsdlUrl();
@@ -199,6 +222,19 @@ abstract class Client
     {
         return 'Inbox';
     }
+
+    /**
+     * @return string
+     */
+    protected function getWsdlUrl(): string
+    {
+        return 'CfeService.svc?wsdl';
+    }
+
+    /**
+     * @return string
+     */
+    abstract protected function getResponseClass(): string;
 
     /**
      * Get most recent XML Request sent to SOAP server
@@ -229,22 +265,4 @@ abstract class Client
     {
         return $this->client->__getLastResponse();
     }
-
-    /**
-     * @return string
-     */
-    protected function getWsdlUrl(): string
-    {
-        return 'CfeService.svc?wsdl';
-    }
-
-    /**
-     * @return mixed
-     */
-    abstract protected function getTipoMensaje();
-
-    /**
-     * @return string
-     */
-    abstract protected function getResponseClass(): string;
 }
