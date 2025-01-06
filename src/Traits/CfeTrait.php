@@ -180,7 +180,7 @@ trait CfeTrait
         }
 
         // Factura de Exportación
-        if ($this->getTipoCFE() === 121) {
+        if (in_array($this->getTipoCFE(), [121, 122, 123])) {
             $this->setExportTotals($obTotales, $fTotal);
 
             return;
@@ -281,9 +281,11 @@ trait CfeTrait
     }
 
     /**
+     * @param bool $withNf
+     *
      * @return float|int|mixed
      */
-    public function calculateTotal()
+    public function calculateTotal(bool $withNf = true)
     {
         $fTotal = 0;
 
@@ -292,12 +294,22 @@ trait CfeTrait
         }
 
         // Sum items value
+        $arIndFact = [1, 16, 10];
+
+        if ($withNf) {
+            $arIndFact = array_merge($arIndFact, [6, 7]);
+        }
+
         foreach ($this->getItems() as $arItem) {
-            if (!isset($arItem['IndFact']) || !in_array((int) $arItem['IndFact'], [1, 16, 10])) {
+            if (!isset($arItem['IndFact']) || !in_array((int) $arItem['IndFact'], $arIndFact)) {
                 continue;
             }
 
-            $fTotal += $arItem['MontoItem'];
+            if (isset($arItem['IndFact']) && (int) $arItem['IndFact'] === 7) {
+                $fTotal -= $arItem['MontoItem'];
+            } else {
+                $fTotal += $arItem['MontoItem'];
+            }
         }
 
         if ($this->arTotals['MntIVATasaMin']) {
@@ -332,9 +344,9 @@ trait CfeTrait
         }
 
         /** @var IdDoc $obIdDoc */
-        if (($obIdDoc = $this->arEncabezado['IdDoc']) && $obIdDoc->IndCobPropia) {
+        if (!$withNf && ($obIdDoc = $this->arEncabezado['IdDoc']) && $obIdDoc->IndCobPropia) {
             foreach ($this->getItems() as $arItem) {
-                if (isset($arItem['IndFact']) && (int) $arItem['IndFact'] === 7) {
+                if (isset($arItem['IndFact']) && (int)$arItem['IndFact'] === 7) {
                     $fTotal -= $arItem['MontoItem'];
                 } else {
                     $fTotal += $arItem['MontoItem'];
@@ -434,7 +446,7 @@ trait CfeTrait
      */
     protected function setExportTotals(Totales $obTotales, float $fTotal): void
     {
-        if ($this->getTipoCFE() !== 121) {
+        if (!in_array($this->getTipoCFE(), [121, 122, 123])) {
             return;
         }
 
@@ -468,11 +480,17 @@ trait CfeTrait
         }
 
         if ($force || !$obTotales->hasAttribute('MontoNF')) {
-            $obTotales->MontoNF = round($obTotales->MntPagar - $obTotales->MntTotal, 2);
+            $fTotalNF = round($obTotales->MntPagar - $obTotales->MntTotal, 2);
+
+            if ($obTotales->MontoNF) {
+                $obTotales->MontoNF += $fTotalNF;
+            } else {
+                $obTotales->MontoNF = $fTotalNF;
+            }
         }
 
         // Add Item with round value
-        if (!$obTotales->MontoNF) {
+        if (!isset($fTotalNF)) {
             return;
         }
 
@@ -480,10 +498,10 @@ trait CfeTrait
         // Indicador de Facturación (Item_Det_Fact)
         // 6: Producto o servicio   no facturable
         // 7: Producto o servicio no facturable negativo
-        $obItem->IndFact        = $obTotales->MontoNF > 0 ? 6 : 7;
+        $obItem->IndFact        = $fTotalNF > 0 ? 6 : 7;
         $obItem->NomItem        = 'Redondeo';
         $obItem->Cantidad       = 1;
-        $obItem->PrecioUnitario = abs($obTotales->MontoNF);
+        $obItem->PrecioUnitario = abs($fTotalNF);
         $this->addItem($obItem);
     }
 
@@ -551,10 +569,10 @@ trait CfeTrait
      */
     public function __call(string $sName, array $arguments): self
     {
-        if (substr($sName, 0, 3) === 'add' && !empty($arguments)) {
+        if (str_starts_with($sName, 'add') && !empty($arguments)) {
             $sMntKey = substr($sName, 3);
 
-            if (array_keys($this->arTotals, $sMntKey)) {
+            if (array_key_exists($sMntKey, $this->arTotals)) {
                 $decrease = isset($arguments[1]) && (bool) $arguments[1];
                 $fTax     = isset($arguments[2]) ? (float) $arguments[2] : null;
 
