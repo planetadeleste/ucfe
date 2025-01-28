@@ -186,6 +186,13 @@ trait CfeTrait
             return;
         }
 
+        // Eremito y Eremito de Exportación
+        if (in_array($this->getTipoCFE(), [181, 124])) {
+            $obTotales->CantLinDet = count($this->arDetalle['Item']);
+
+            return;
+        }
+
         // Set initial value
         $obTotales->MntNoGrv = 0;
 
