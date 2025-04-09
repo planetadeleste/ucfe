@@ -406,9 +406,7 @@ trait CfeTrait
             return;
         }
 
-        if ($this->arTotals['MntTotRetenido']) {
-            $obTotales->MntTotRetenido = $this->arTotals['MntTotRetenido'];
-        }
+        $obTotales->MntTotRetenido = $this->arTotals['MntTotRetenido'];
 
         if ($this->arTotals['MntTotCredFisc']) {
             $obTotales->MntTotCredFisc = $this->arTotals['MntTotCredFisc'];
