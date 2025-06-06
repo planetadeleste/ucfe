@@ -16,7 +16,7 @@ abstract class CfeItemBase
         'CantLinDet'           => 'int',
         'NroLinDet'            => 'int',
         'IndFact'              => 'int',
-        'Cantidad'             => 'decimal',
+        'Cantidad'             => 'decimal:3',
         'PrecioUnitario'       => 'decimal',
         'MontoItem'            => 'decimal',
         'IVATasaBasica'        => 'decimal',

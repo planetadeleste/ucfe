@@ -269,40 +269,70 @@ trait HasAttributeTrait
     }
 
     /**
+     * Devuelve el array de casts definidos para los atributos.
+     *
+     * @return array
+     */
+    public function getCasts(): array
+    {
+        return empty($this->arCast)
+            ? []
+            : array_map(
+                static function ($sCast) {
+                    return $sCast === 'decimal' ? 'decimal:2' : $sCast;
+                },
+                $this->arCast
+            );
+    }
+
+    /**
      * @param string $sKey
      * @param $sValue
      *
-     * @return bool|Carbon|float|int|mixed
+     * @return mixed
      */
-    protected function castAttribute(string $sKey, $sValue)
+    protected function castAttribute(string $sKey, $sValue): mixed
     {
         if (!$this->hasCast($sKey) || empty($sValue)) {
             return $sValue;
         }
 
-        switch ($this->arCast[$sKey]) {
-            case 'int':
-            case 'integer':
-                return (int) $sValue;
-            case 'real':
-            case 'float':
-            case 'double':
-                return (float) $sValue;
-            case 'decimal':
-                return round((float) $sValue, 2);
-            case 'bool':
-                return (bool) $sValue;
-            case 'array':
-            case 'json':
-                return is_string($sValue) ? json_decode($sValue, true) : $sValue;
-            case 'object':
-                return is_string($sValue) ? json_decode($sValue, false) : $sValue;
-            case 'date':
-            case 'datetime':
-            case 'timestamp':
-                return Carbon::parse($sValue);
-            default:
-                return $sValue;
-        }
+        $castType = $this->getCastType($sKey);
+
+        return match ($castType) {
+            'int', 'integer' => (int)$sValue,
+            'real', 'float', 'double' => (float)$sValue,
+            'decimal' => $this->asDecimal($sValue, $sKey),
+            'bool' => (bool)$sValue,
+            'array', 'json' => is_string($sValue) ? json_decode($sValue, true) : $sValue,
+            'object' => is_string($sValue) ? json_decode($sValue, false) : $sValue,
+            'date', 'datetime', 'timestamp' => Carbon::parse($sValue),
+            default => $sValue,
+        };
+    }
+
+    /**
+     * Get the type of cast for a given attribute.
+     *
+     * @param string $sKey
+     *
+     * @return string|null
+     */
+    protected function getCastType(string $sKey): ?string
+    {
+        return $this->hasCast($sKey) ? explode(':', array_get($this->arCast, $sKey))[0] : null;
+    }
+
+    /**
+     * Casts a value to a decimal with a specified precision.
+     *
+     * @param mixed $sValue
+     * @param string $sKey
+     *
+     * @return float
+     */
+    protected function asDecimal(mixed $sValue, string $sKey): float
+    {
+        return round((float)$sValue, explode(':', array_get($this->getCasts(), $sKey), 2)[1] ?? 2);
     }
 }
