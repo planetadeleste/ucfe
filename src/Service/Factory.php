@@ -6,22 +6,22 @@ use Str;
 
 class Factory
 {
-    public const TYPE_ETCK      = 'eTck';
-    public const TYPE_EFACT     = 'eFact';
-    public const TYPE_EFACT_EXP = 'eFact_Exp';
-    public const TYPE_EREM      = 'eRem';
-    public const TYPE_EREM_EXP  = 'eRem_Exp';
-    public const TYPE_ERESG     = 'eResg';
-    public const TYPE_EBOLETA   = 'eBoleta';
+    public const string TYPE_ETCK      = 'eTck';
+    public const string TYPE_EFACT     = 'eFact';
+    public const string TYPE_EFACT_EXP = 'eFact_Exp';
+    public const string TYPE_EREM      = 'eRem';
+    public const string TYPE_EREM_EXP  = 'eRem_Exp';
+    public const string TYPE_ERESG     = 'eResg';
+    public const string TYPE_EBOLETA   = 'eBoleta';
 
     /**
      * @param string $sType eTck|eFact|eFact_Exp|eRem|eRem_Exp|eResg|eBoleta
      *
-     * @return EBoleta|EFact|EFactExp|ERem|ERemExp|ETck|EResg
+     * @return CfeClient|mixed
      */
     public static function make(string $sType)
     {
-        $sClass = __NAMESPACE__ . '\\' . Str::studly($sType);
+        $sClass = __NAMESPACE__.'\\'.Str::studly($sType);
 
         return new $sClass();
     }

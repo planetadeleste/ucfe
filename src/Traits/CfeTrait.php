@@ -36,7 +36,9 @@ use PlanetaDelEste\Ucfe\Service\ETck;
  */
 trait CfeTrait
 {
-    /** @var array Final XML data */
+    /**
+     * @var array Final XML data
+     */
     protected array $arData = [];
 
     /**
@@ -44,7 +46,9 @@ trait CfeTrait
      */
     protected bool $disableRounding = false;
 
-    /** @var array */
+    /**
+     * @var array
+     */
     protected array $arEncabezado = [
         'IdDoc'    => null,
         'Emisor'   => null,
@@ -52,15 +56,21 @@ trait CfeTrait
         'Totales'  => null,
     ];
 
-    /** @var array<array> */
+    /**
+     * @var array<array>
+     */
     protected array $arDetalle = [
         'Item' => []
     ];
 
-    /** @var array */
+    /**
+     * @var array
+     */
     protected array $arExtraData = [];
 
-    /** @var array<float> Set totals */
+    /**
+     * @var array<float> Set totals
+     */
     protected array $arTotals = [
         'MntIVAOtra'           => 0,
         'MntIVATasaBasica'     => 0,
@@ -74,6 +84,9 @@ trait CfeTrait
         'MntNoGrv'             => 0,
     ];
 
+    /**
+     * @var array
+     */
     protected array $rules = [
         'Encabezado.IdDoc'    => 'required',
         'Encabezado.Emisor'   => 'required',
@@ -81,6 +94,9 @@ trait CfeTrait
         'Encabezado.Totales'  => 'required',
     ];
 
+    /**
+     * @var array
+     */
     protected array $arSortKeys = [
         'Encabezado',
         'Detalle',
@@ -92,8 +108,34 @@ trait CfeTrait
         'Compl_Fiscal',
     ];
 
-    /** @var string Nota de Crédito|Débito [nc|nb] */
+    /**
+     * @var string Nota de Crédito|Débito [nc|nb]
+     */
     protected ?string $noteType = null;
+
+    /**
+     * @param string $sName
+     * @param array  $arguments
+     *
+     * @return self
+     *
+     * @throws \Exception
+     */
+    public function __call(string $sName, array $arguments): self
+    {
+        if (str_starts_with($sName, 'add') && !empty($arguments)) {
+            $sMntKey = substr($sName, 3);
+
+            if (array_key_exists($sMntKey, $this->arTotals)) {
+                $decrease = isset($arguments[1]) && (bool) $arguments[1];
+                $fTax     = isset($arguments[2]) ? (float) $arguments[2] : null;
+
+                return $this->addAmount($arguments[0], $sMntKey, $decrease, $fTax);
+            }
+        }
+
+        throw new \Exception("Method {$sName} does not exits");
+    }
 
     /**
      * @param bool $bForce
@@ -158,6 +200,9 @@ trait CfeTrait
         }
     }
 
+    /**
+     * @return void
+     */
     public function setTotals(): void
     {
         /** @var Totales $obTotales */
@@ -292,7 +337,7 @@ trait CfeTrait
      *
      * @return float|int|mixed
      */
-    public function calculateTotal(bool $withNf = true)
+    public function calculateTotal(bool $withNf = true): float|int
     {
         $fTotal = 0;
 
@@ -353,7 +398,7 @@ trait CfeTrait
         /** @var IdDoc $obIdDoc */
         if (!$withNf && ($obIdDoc = $this->arEncabezado['IdDoc']) && $obIdDoc->IndCobPropia) {
             foreach ($this->getItems() as $arItem) {
-                if (isset($arItem['IndFact']) && (int)$arItem['IndFact'] === 7) {
+                if (isset($arItem['IndFact']) && (int) $arItem['IndFact'] === 7) {
                     $fTotal -= $arItem['MontoItem'];
                 } else {
                     $fTotal += $arItem['MontoItem'];
@@ -370,95 +415,6 @@ trait CfeTrait
     public function getItems(): array
     {
         return $this->arDetalle['Item'];
-    }
-
-    /**
-     * CFE type
-     * 101 e-Ticket
-     * 102 Nota de Crédito de e-Ticket
-     * 103 Nota de Débito de e-Ticket
-     * 111 e-Factura
-     * 112 Nota de Crédito de e-Factura
-     * 113 Nota de Débito de e-Factura
-     * 181 e-Remito
-     * 182 e-Resguardo
-     * 121 e-Factura Exportación
-     * 122 Nota de Crédito de e-Factura Exportación
-     * 123 Nota de Débito de e-Factura Exportación
-     * 124 e-Remito de Exportación
-     * 131 e-Ticket Venta por Cuenta Ajena
-     * 132 Nota de Crédito de e-Ticket Venta por Cuenta Ajena
-     * 133 Nota de Débito de e-Ticket Venta por Cuenta Ajena
-     * 141 e-Factura Venta por Cuenta Ajena
-     * 142 Nota de Crédito de e-Factura Venta por Cuenta Ajena
-     * 143 Nota de Débito de e-Factura Venta por Cuenta Ajena
-     * 151 e-Boleta de entrada
-     * 152 Nota de crédito de e-Boleta de entrada
-     * 153 Nota de débito de e-Boleta de entrada
-     *
-     * @return int
-     */
-    abstract public function getTipoCFE(): int;
-
-    protected function setResgTotals(Totales $obTotales): void
-    {
-        if ($this->getTipoCFE() !== 182) {
-            return;
-        }
-
-        $obTotales->MntTotRetenido = $this->arTotals['MntTotRetenido'];
-
-        if ($this->arTotals['MntTotCredFisc']) {
-            $obTotales->MntTotCredFisc = $this->arTotals['MntTotCredFisc'];
-        }
-
-        $obTotales->CantLinDet = count($this->getItems());
-        $arRetenc              = [];
-
-        foreach ($this->getItems() as $arItem) {
-            if (!isset($arItem['RetencPercep'])) {
-                continue;
-            }
-
-            foreach ($arItem['RetencPercep'] as $arItemRetenc) {
-                $sCode  = $arItemRetenc['CodRet'];
-                $sValue = $arItemRetenc['ValRetPerc'];
-
-                if (isset($arItem['IndFact']) && (int) $arItem['IndFact'] === 9 && $sValue > 0) {
-                    $sValue = PriceHelper::negative($sValue);
-                }
-
-                if (!isset($arRetenc[$sCode])) {
-                    $arRetenc[$sCode]             = new Totales\RetencPercep();
-                    $arRetenc[$sCode]->CodRet     = $sCode;
-                    $arRetenc[$sCode]->ValRetPerc = $sValue;
-                } else {
-                    $arRetenc[$sCode]->ValRetPerc += $sValue;
-                }
-            }
-        }
-
-        $obTotales->RetencPercep = array_map(static function (Totales\RetencPercep $obReten) {
-            return $obReten->toArray();
-        }, array_values($arRetenc));
-    }
-
-    /**
-     * @param Totales $obTotales
-     * @param float   $fTotal
-     *
-     * @return void
-     */
-    protected function setExportTotals(Totales $obTotales, float $fTotal): void
-    {
-        if (!in_array($this->getTipoCFE(), [121, 122, 123])) {
-            return;
-        }
-
-        $obTotales->MntTotal     = $fTotal;
-        $obTotales->MntPagar     = $fTotal;
-        $obTotales->MntExpoyAsim = $fTotal;
-        $obTotales->CantLinDet   = count($this->arDetalle['Item']);
     }
 
     /**
@@ -545,47 +501,11 @@ trait CfeTrait
     }
 
     /**
-     * @return void
-     */
-    protected function sort(): void
-    {
-        $arData = $this->arData;
-        $arKeys = array_flip($this->arSortKeys);
-        $result = array_replace($arKeys, $arData);
-
-        $this->arData = array_intersect_key($result, $arData);
-    }
-
-    /**
      * @return array
      */
     public function getRules(): array
     {
         return $this->rules;
-    }
-
-    /**
-     * @param string $sName
-     * @param array  $arguments
-     *
-     * @return self
-     *
-     * @throws \Exception
-     */
-    public function __call(string $sName, array $arguments): self
-    {
-        if (str_starts_with($sName, 'add') && !empty($arguments)) {
-            $sMntKey = substr($sName, 3);
-
-            if (array_key_exists($sMntKey, $this->arTotals)) {
-                $decrease = isset($arguments[1]) && (bool) $arguments[1];
-                $fTax     = isset($arguments[2]) ? (float) $arguments[2] : null;
-
-                return $this->addAmount($arguments[0], $sMntKey, $decrease, $fTax);
-            }
-        }
-
-        throw new \Exception("Method {$sName} does not exits");
     }
 
     /**
@@ -596,12 +516,8 @@ trait CfeTrait
      *
      * @return ETck|EBoleta|EFact|EFactExp|ERem|ERemExp|EResg|CfeTrait
      */
-    public function addAmount(
-        float $fValue,
-        string $sMntKey = 'MntIVATasaBasica',
-        bool $decrease = false,
-        ?float $fTax = null
-    ): self {
+    public function addAmount(float $fValue, string $sMntKey = 'MntIVATasaBasica', bool $decrease = false, ?float $fTax = null): self
+    {
         $obTotals    = $this->getTotals();
         $sMntNetoKey = 'MntNeto'.substr($sMntKey, 3);
 
@@ -632,13 +548,6 @@ trait CfeTrait
 
         return $this;
     }
-
-    /**
-     * Get CFE definition type
-     *
-     * @return string eTck|eFact|eFact_Exp|eRem|eRem_Exp|eResg|eBoleta
-     */
-    abstract public function getType(): string;
 
     /**
      * @return IdDoc
@@ -794,7 +703,7 @@ trait CfeTrait
     }
 
     /**
-     * @param \PlanetaDelEste\Ucfe\Cfe\Referencia\Referencia $obReferencia
+     * @param Referencia\Referencia $obReferencia
      *
      * @return $this
      */
@@ -870,5 +779,118 @@ trait CfeTrait
     public function setDisableRounding(bool $disableRounding): void
     {
         $this->disableRounding = $disableRounding;
+    }
+
+    /**
+     * CFE type
+     * 101 e-Ticket
+     * 102 Nota de Crédito de e-Ticket
+     * 103 Nota de Débito de e-Ticket
+     * 111 e-Factura
+     * 112 Nota de Crédito de e-Factura
+     * 113 Nota de Débito de e-Factura
+     * 181 e-Remito
+     * 182 e-Resguardo
+     * 121 e-Factura Exportación
+     * 122 Nota de Crédito de e-Factura Exportación
+     * 123 Nota de Débito de e-Factura Exportación
+     * 124 e-Remito de Exportación
+     * 131 e-Ticket Venta por Cuenta Ajena
+     * 132 Nota de Crédito de e-Ticket Venta por Cuenta Ajena
+     * 133 Nota de Débito de e-Ticket Venta por Cuenta Ajena
+     * 141 e-Factura Venta por Cuenta Ajena
+     * 142 Nota de Crédito de e-Factura Venta por Cuenta Ajena
+     * 143 Nota de Débito de e-Factura Venta por Cuenta Ajena
+     * 151 e-Boleta de entrada
+     * 152 Nota de crédito de e-Boleta de entrada
+     * 153 Nota de débito de e-Boleta de entrada
+     *
+     * @return int
+     */
+    abstract public function getTipoCFE(): int;
+
+    /**
+     * Get CFE definition type
+     *
+     * @return string eTck|eFact|eFact_Exp|eRem|eRem_Exp|eResg|eBoleta
+     */
+    abstract public function getType(): string;
+
+    /**
+     * @param Totales $obTotales
+     *
+     * @return void
+     */
+    protected function setResgTotals(Totales $obTotales): void
+    {
+        if ($this->getTipoCFE() !== 182) {
+            return;
+        }
+
+        $obTotales->MntTotRetenido = $this->arTotals['MntTotRetenido'];
+
+        if ($this->arTotals['MntTotCredFisc']) {
+            $obTotales->MntTotCredFisc = $this->arTotals['MntTotCredFisc'];
+        }
+
+        $obTotales->CantLinDet = count($this->getItems());
+        $arRetenc              = [];
+
+        foreach ($this->getItems() as $arItem) {
+            if (!isset($arItem['RetencPercep'])) {
+                continue;
+            }
+
+            foreach ($arItem['RetencPercep'] as $arItemRetenc) {
+                $sCode  = $arItemRetenc['CodRet'];
+                $sValue = $arItemRetenc['ValRetPerc'];
+
+                if (isset($arItem['IndFact']) && (int) $arItem['IndFact'] === 9 && $sValue > 0) {
+                    $sValue = PriceHelper::negative($sValue);
+                }
+
+                if (!isset($arRetenc[$sCode])) {
+                    $arRetenc[$sCode]             = new Totales\RetencPercep();
+                    $arRetenc[$sCode]->CodRet     = $sCode;
+                    $arRetenc[$sCode]->ValRetPerc = $sValue;
+                } else {
+                    $arRetenc[$sCode]->ValRetPerc += $sValue;
+                }
+            }
+        }
+
+        $obTotales->RetencPercep = array_map(static function (Totales\RetencPercep $obReten) {
+            return $obReten->toArray();
+        }, array_values($arRetenc));
+    }
+
+    /**
+     * @param Totales $obTotales
+     * @param float   $fTotal
+     *
+     * @return void
+     */
+    protected function setExportTotals(Totales $obTotales, float $fTotal): void
+    {
+        if (!in_array($this->getTipoCFE(), [121, 122, 123])) {
+            return;
+        }
+
+        $obTotales->MntTotal     = $fTotal;
+        $obTotales->MntPagar     = $fTotal;
+        $obTotales->MntExpoyAsim = $fTotal;
+        $obTotales->CantLinDet   = count($this->arDetalle['Item']);
+    }
+
+    /**
+     * @return void
+     */
+    protected function sort(): void
+    {
+        $arData = $this->arData;
+        $arKeys = array_flip($this->arSortKeys);
+        $result = array_replace($arKeys, $arData);
+
+        $this->arData = array_intersect_key($result, $arData);
     }
 }
