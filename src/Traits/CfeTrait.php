@@ -451,7 +451,7 @@ trait CfeTrait
         }
 
         // Add Item with round value
-        if (!isset($fTotalNF)) {
+        if (!isset($fTotalNF) || abs($fTotalNF) === 0 || abs($fTotalNF) === 0.0) {
             return;
         }
 
