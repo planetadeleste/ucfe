@@ -18,25 +18,20 @@ use PlanetaDelEste\Ucfe\WebServicesFE;
  */
 class GetReceivedInvoices extends WebServicesFE
 {
+    /**
+     * GetReceivedInvoices constructor.
+     */
     public function __construct()
     {
-//        $this->rutEmisor = '0';
+// $this->rutEmisor = '0';
         $this->fechaHasta = now();
-        $this->tipoCfe = '0';
-        $this->pagina = 1;
-        $this->pageSize = 10;
+        $this->tipoCfe    = '0';
+        $this->pagina     = 1;
+        $this->pageSize   = 10;
     }
 
     /**
-     * @inheritDoc
-     */
-    protected function getResponseClass(): string
-    {
-        return GetReceivedInvoicesResponse::class;
-    }
-
-    /**
-     * @inheritDoc
+     * @return array
      */
     public function getSortKeys(): array
     {
@@ -44,18 +39,12 @@ class GetReceivedInvoices extends WebServicesFE
     }
 
     /**
-     * @inheritDoc
+     * @return string
      */
     public function getServiceName(): string
     {
         return 'ObtenerCfeRecibidosPagina';
     }
-
-    protected function getWsdlUrl(): string
-    {
-        return 'Query/WebServicesListadosFE.svc?wsdl';
-    }
-
 
     /**
      * @return string DateTime format
@@ -63,5 +52,21 @@ class GetReceivedInvoices extends WebServicesFE
     public function getDateFormat(): string
     {
         return 'Ymd';
+    }
+
+    /**
+     * @return string
+     */
+    protected function getResponseClass(): string
+    {
+        return GetReceivedInvoicesResponse::class;
+    }
+
+    /**
+     * @return string
+     */
+    protected function getWsdlUrl(): string
+    {
+        return 'Query116/WebServicesListadosFE.svc?wsdl';
     }
 }

@@ -12,6 +12,9 @@ use PlanetaDelEste\Ucfe\Cfe\CfeItemBase;
  * @property string $NroCFERef Nro del CFE de Referencia
  * @property string $RazonRef  Razon Explicita por la que se Referencia el Documento
  * @property string $FechaCFEref
+ * @property float  $MntCFEref
+ * @property string $TpoMonedaRef
+ * @property float  $TpoCambioRef
  */
 class Referencia extends CfeItemBase
 {
@@ -28,6 +31,9 @@ class Referencia extends CfeItemBase
             'NroCFERef',
             'RazonRef',
             'FechaCFEref',
+            'MntCFEref',
+            'TpoMonedaRef',
+            'TpoCambioRef',
         ];
     }
 }

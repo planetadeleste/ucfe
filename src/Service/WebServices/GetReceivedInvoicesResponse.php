@@ -2,14 +2,14 @@
 
 namespace PlanetaDelEste\Ucfe\Service\WebServices;
 
+use PlanetaDelEste\Ucfe\Result\ObtenerCfeRecibidos;
 use PlanetaDelEste\Ucfe\WebServicesFEResponse;
 
+/**
+ * @method ObtenerCfeRecibidos getResult()
+ */
 class GetReceivedInvoicesResponse extends WebServicesFEResponse
 {
-
-    /**
-     * @inheritDoc
-     */
     public function getServiceName(): string
     {
         return 'ObtenerCfeRecibidosPagina';

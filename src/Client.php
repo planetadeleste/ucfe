@@ -5,6 +5,7 @@ namespace PlanetaDelEste\Ucfe;
 use Illuminate\Support\Arr;
 use PlanetaDelEste\Ucfe\Result\Base;
 use SoapClient;
+use SoapFault;
 
 abstract class Client
 {
@@ -23,8 +24,17 @@ abstract class Client
      */
     protected $auth;
 
+    /**
+     * @var string
+     */
     protected string $url = '';
 
+    /**
+     * @param string $name
+     * @param array  $arArgs
+     *
+     * @return mixed
+     */
     public static function __callStatic(string $name, array $arArgs = [])
     {
         if (method_exists(static::class, $name)) {
@@ -129,6 +139,52 @@ abstract class Client
     }
 
     /**
+     * @return string Use custom SoapClient class
+     */
+    public function getSoapClass(): string
+    {
+        return SoapClient::class;
+    }
+
+    /**
+     * @return string
+     */
+    public function getInbox(): string
+    {
+        return 'Inbox';
+    }
+
+    /**
+     * Get most recent XML Request sent to SOAP server
+     *
+     * @return string
+     */
+    public function getLastRequestXml(): ?string
+    {
+        return $this->client->__getLastRequest();
+    }
+
+    /**
+     * Get headers of last request
+     *
+     * @return string|null
+     */
+    public function getLastRequestHeaders(): ?string
+    {
+        return $this->client->__getLastRequestHeaders();
+    }
+
+    /**
+     * Get most recent XML Response returned from SOAP server
+     *
+     * @return string
+     */
+    public function getLastResponseXml(): ?string
+    {
+        return $this->client->__getLastResponse();
+    }
+
+    /**
      * @return bool
      *
      * @throws \Exception
@@ -157,11 +213,6 @@ abstract class Client
 
         return true;
     }
-
-    /**
-     * @return mixed
-     */
-    abstract protected function getTipoMensaje();
 
     /**
      * @param array $arOptions
@@ -199,28 +250,27 @@ abstract class Client
 
         $sUrl .= $this->getWsdlUrl();
 
-        $this->url    = $sUrl;
-        $this->client = new $sSoapClass($sUrl, $arOptions);
-        $authHeader   = new WsseAuthHeader(Auth::getUser(), Auth::getPassword());
+        $this->url = $sUrl;
+
+        try {
+            $this->client = new $sSoapClass($sUrl, $arOptions);
+        } catch (SoapFault $obException) {
+            if (!$this->shouldRetryWithSingleWsdl($obException, $sUrl)) {
+                throw $obException;
+            }
+
+            $sSingleWsdlUrl               = $this->toSingleWsdlUrl($sUrl);
+            $arRetryOptions               = $arOptions;
+            $arRetryOptions['cache_wsdl'] = WSDL_CACHE_NONE;
+
+            $this->url    = $sSingleWsdlUrl;
+            $this->client = new $sSoapClass($sSingleWsdlUrl, $arRetryOptions);
+        }
+
+        $authHeader = new WsseAuthHeader(Auth::getUser(), Auth::getPassword());
         $this->client->__setSoapHeaders([$authHeader]);
 
         return $this->client;
-    }
-
-    /**
-     * @return string Use custom SoapClient class
-     */
-    public function getSoapClass(): string
-    {
-        return SoapClient::class;
-    }
-
-    /**
-     * @return string
-     */
-    public function getInbox(): string
-    {
-        return 'Inbox';
     }
 
     /**
@@ -232,37 +282,39 @@ abstract class Client
     }
 
     /**
+     * @param SoapFault $obException
+     * @param string    $sUrl
+     *
+     * @return bool
+     */
+    protected function shouldRetryWithSingleWsdl(SoapFault $obException, string $sUrl): bool
+    {
+        $sMessage = (string) $obException->getMessage();
+
+        if (stripos($sMessage, 'already defined') === false) {
+            return false;
+        }
+
+        return str_contains($sUrl, '?wsdl') && stripos($sUrl, 'singleWsdl') === false;
+    }
+
+    /**
+     * @param string $sUrl
+     *
+     * @return string
+     */
+    protected function toSingleWsdlUrl(string $sUrl): string
+    {
+        return preg_replace('/\?wsdl$/i', '?singleWsdl', $sUrl) ?: $sUrl;
+    }
+
+    /**
+     * @return mixed
+     */
+    abstract protected function getTipoMensaje();
+
+    /**
      * @return string
      */
     abstract protected function getResponseClass(): string;
-
-    /**
-     * Get most recent XML Request sent to SOAP server
-     *
-     * @return string
-     */
-    public function getLastRequestXml(): ?string
-    {
-        return $this->client->__getLastRequest();
-    }
-
-    /**
-     * Get headers of last request
-     *
-     * @return string|null
-     */
-    public function getLastRequestHeaders(): ?string
-    {
-        return $this->client->__getLastRequestHeaders();
-    }
-
-    /**
-     * Get most recent XML Response returned from SOAP server
-     *
-     * @return string
-     */
-    public function getLastResponseXml(): ?string
-    {
-        return $this->client->__getLastResponse();
-    }
 }

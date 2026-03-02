@@ -10,6 +10,7 @@ abstract class WebServicesFE extends Client
 
     /**
      * @return mixed
+     *
      * @throws \Exception
      */
     public function send()
@@ -21,19 +22,27 @@ abstract class WebServicesFE extends Client
      * @param array $arParams
      *
      * @return mixed
+     *
      * @throws \Exception
      */
     public function exec(array $arParams = [])
     {
         $this->validateAuth();
 
-        $this->inbox = false;
+        $this->inbox    = false;
         $sResponseClass = $this->getResponseClass();
-        $sServiceName = $this->getServiceName();
-        $obResponse = $this->soap()->$sServiceName($arParams);
+        $sServiceName   = $this->getServiceName();
+        $obResponse     = $this->soap()->$sServiceName($arParams);
 
         return new $sResponseClass($obResponse);
     }
+
+    /**
+     * Get soap service name
+     *
+     * @return string
+     */
+    abstract public function getServiceName(): string;
 
     /**
      * @inheritDoc
@@ -47,12 +56,4 @@ abstract class WebServicesFE extends Client
     {
         return 'Query/WebServicesFE.svc?wsdl';
     }
-
-    /**
-     * Get soap service name
-     *
-     * @return string
-     */
-    abstract public function getServiceName(): string;
-
 }

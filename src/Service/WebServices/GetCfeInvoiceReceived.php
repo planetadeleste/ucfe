@@ -8,30 +8,31 @@ use PlanetaDelEste\Ucfe\WebServicesFE;
  * Class GetCfeInvoice
  *
  * @property int    $rut
+ * @property int    $rutRecibido
  * @property int    $tipoCfe
  * @property string $serieCfe
  * @property int    $numeroCfe
  *
- * @method GetCfeInvoiceResponse send()
+ * @method GetCfeInvoiceReceivedResponse send()
  */
-class GetCfeInvoice extends WebServicesFE
+class GetCfeInvoiceReceived extends WebServicesFE
 {
     /**
      * @inheritDoc
      */
     public function getSortKeys(): array
     {
-        return ['rut', 'tipoCfe', 'serieCfe', 'numeroCfe'];
+        return ['rut', 'rutRecibido', 'tipoCfe', 'serieCfe', 'numeroCfe'];
     }
 
     public function getServiceName(): string
     {
-        return 'ObtenerCfeEmitido';
+        return 'ObtenerCfeRecibido';
     }
 
     protected function getResponseClass(): string
     {
-        return GetCfeInvoiceResponse::class;
+        return GetCfeInvoiceReceivedResponse::class;
     }
 
     protected function getWsdlUrl(): string
